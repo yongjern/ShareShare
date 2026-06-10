@@ -305,18 +305,14 @@
     let currentMode = 'cafe';
     let currentRoom = null;
     let hasServer = false;
-    let isCreator = false; // 追蹤當前用戶是否是房間發起人
+    let isCreator = false;
     const localRoomsKey = 'split_bill_rooms';
 
     // === Init ===
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       initTheme();
+      await checkServer();
       route();
-      checkServer().then(() => {
-        if (hasServer && location.hash.startsWith('#room=')) {
-          route();
-        }
-      });
     });
     window.addEventListener('hashchange', route);
 
@@ -330,11 +326,7 @@
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-        if (r.ok) {
-          hasServer = true;
-        } else {
-          hasServer = false;
-        }
+        hasServer = r.ok;
       } catch(e) { 
         hasServer = false; 
       }
@@ -424,22 +416,17 @@
     // === Room Load ===
     async function loadRoom(id) {
       let room = null;
-      let fromServer = false;
 
-      // 優先從伺服器獲取最新數據
+      // 優先從伺服器獲取最新房間數據
       if (hasServer) {
         room = await api(`/api/rooms/${id}`);
-        if (room) {
-          fromServer = true;
-        }
       }
 
-      // 如果伺服器失敗，從本地存儲加載
+      // 如果伺服器沒有，從本地存儲加載
       if (!room) {
         room = loadLocal(id);
       }
 
-      // 如果兩個都沒有找到，顯示錯誤
       if (!room) {
         alert('房間不存在或已過期。');
         location.hash = '';
