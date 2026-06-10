@@ -47,7 +47,7 @@ app.post('/api/rooms', (req, res) => {
   res.status(201).json(roomData);
 });
 
-// 3. 取得房間資料
+// 3. 取得房間資料（其他人進入時用，不返回 PIN）
 app.get('/api/rooms/:id', (req, res) => {
   const roomId = req.params.id;
   const room = rooms[roomId];

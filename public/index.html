@@ -305,6 +305,7 @@
     let currentMode = 'cafe';
     let currentRoom = null;
     let hasServer = false;
+    let isCreator = false; // 追蹤當前用戶是否是房間發起人
     const localRoomsKey = 'split_bill_rooms';
 
     // === Init ===
@@ -378,6 +379,7 @@
       });
       document.getElementById('view-home').classList.remove('hidden');
       document.getElementById('create-panel').classList.add('hidden');
+      isCreator = false;
     }
 
     // === Home Actions ===
@@ -415,26 +417,41 @@
         if (res) Object.assign(room, res);
       }
       saveLocal(room);
+      isCreator = true;
       location.hash = `room=${room.id}`;
     }
 
     // === Room Load ===
     async function loadRoom(id) {
       let room = null;
+      let fromServer = false;
+
+      // 優先從伺服器獲取最新數據
       if (hasServer) {
         room = await api(`/api/rooms/${id}`);
+        if (room) {
+          fromServer = true;
+        }
       }
+
+      // 如果伺服器失敗，從本地存儲加載
       if (!room) {
         room = loadLocal(id);
       }
 
+      // 如果兩個都沒有找到，顯示錯誤
       if (!room) {
-        alert('房間不存在或僅存在於發起人的瀏覽器中。');
+        alert('房間不存在或已過期。');
         location.hash = '';
         return;
       }
 
       currentRoom = room;
+      
+      // 判斷是否是發起人：如果本地有房間且包含 PIN，則是發起人
+      const localRoom = loadLocal(id);
+      isCreator = (localRoom && localRoom.pin) ? true : false;
+
       if (room.isClosed) {
         renderCheckout();
       } else {
@@ -462,9 +479,13 @@
         if (document.getElementById('rest-rows').children.length === 0) addRestRow();
       }
 
+      // 只有發起人才能看到結單按鈕
       const btnClose = document.getElementById('btn-close');
-      if (loadLocal(r.id)) btnClose.classList.remove('hidden');
-      else btnClose.classList.add('hidden');
+      if (isCreator) {
+        btnClose.classList.remove('hidden');
+      } else {
+        btnClose.classList.add('hidden');
+      }
 
       renderOrders();
     }
