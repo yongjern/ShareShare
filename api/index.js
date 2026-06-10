@@ -1,13 +1,9 @@
 const express = require('express');
-const path = require('path');
 const app = express();
 
 app.use(express.json());
 
-// 讓 Express 託管 public 資料夾裡的靜態網頁 (index.html)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// 記憶體暫存（注意：Vercel Serverless 閒置過久會重置清除，點餐暫存夠用，長久儲存建議連資料庫）
+// 記憶體暫存（注意：Vercel 閒置時會重置清除，當下點餐夠用）
 const rooms = {};
 
 // 健康檢查端點
@@ -53,17 +49,6 @@ app.post('/api/rooms/:id/close', (req, res) => {
   res.json({ success: true });
 });
 
-// 兜底路由：前端SPA重新整理不會404
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// 本地開發測試環境監聽
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`本地開發伺服器運行中: http://localhost:${PORT}`);
-  });
-}
-
+// 關鍵：在 Vercel 環境下不需要 app.listen，直接匯出給 Vercel 託管即可
 module.exports = app;
+
