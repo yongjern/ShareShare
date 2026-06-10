@@ -3,126 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/yongjern/ShareShare/refs/heads/main/media/ShareShare%20Project%20Logo.png?token=GHSAT0AAAAAAD7Q4GTMLALKGSW532OOLGIK2RI3ZHQ">
   <title>ShareShare — 無痛揪團與拆帳</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body.light-mode {
-      background-color: #faf5f0;
-      color: #1e293b;
-    }
-    
-    body.dark-mode {
-      background-color: #0f172a;
-      color: #f1f5f9;
-    }
-    
     .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
-    .dark-mode .glass { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
-    
     .fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
-    
     .mode-card { transition: all .2s ease; }
     .mode-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-    
-    /* Dark Mode Styles */
-    .dark-mode .bg-white {
-      background-color: #1e293b;
-    }
-    
-    .dark-mode .bg-slate-50 {
-      background-color: #0f172a;
-    }
-    
-    .dark-mode .text-slate-800 {
-      color: #f1f5f9;
-    }
-    
-    .dark-mode .text-slate-500,
-    .dark-mode .text-slate-400 {
-      color: #94a3b8;
-    }
-    
-    .dark-mode .border-slate-200,
-    .dark-mode .border-slate-100 {
-      border-color: #334155;
-    }
-    
-    .dark-mode input,
-    .dark-mode select,
-    .dark-mode button {
-      transition: all 0.2s ease;
-    }
-    
-    .dark-mode input,
-    .dark-mode select {
-      background-color: #1e293b;
-      color: #f1f5f9;
-      border-color: #334155;
-    }
-    
-    .dark-mode input:focus,
-    .dark-mode select:focus {
-      outline: none;
-      ring: 2px;
-      ring-color: #fb923c;
-    }
   </style>
 </head>
-<body class="light-mode min-h-screen font-sans">
+<body class="bg-orange-50 text-slate-800 min-h-screen font-sans">
 
-  <!-- Theme Toggle Button -->
-  <div class="fixed top-4 right-4 z-50">
-    <button onclick="toggleTheme()" class="px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 text-sm font-medium transition">
-      <span id="theme-icon">🌙</span>
-    </button>
+  <!-- 語言切換按鈕 -->
+  <div class="fixed top-4 right-4 z-50 flex gap-1 bg-white/95 border border-slate-200 p-1 rounded-lg shadow-sm">
+    <button id="lang-zh" onclick="setLanguage('zh')" class="text-xs px-2 py-0.5 rounded transition">中</button>
+    <button id="lang-en" onclick="setLanguage('en')" class="text-xs px-2 py-0.5 rounded transition">EN</button>
   </div>
 
   <div id="view-home" class="max-w-4xl mx-auto px-4 py-12 hidden">
     <div class="text-center mb-10">
-      <h1 class="text-4xl font-bold text-orange-600 mb-2">ShareShare · 無痛揪團與拆帳</h1>
-      <p class="text-slate-500">臨時想要開個團？無需登錄即可開！</p>
+      <h1 data-i18n="app-title" class="text-4xl font-bold text-orange-600 mb-2">ShareShare · 無痛揪團與拆帳</h1>
+      <p data-i18n="app-subtitle" class="text-slate-500">臨時想要開個團？無需登錄即可開！</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
       <div onclick="selectMode('cafe')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
         <div class="text-5xl mb-4">🧋</div>
-        <h2 class="text-xl font-bold mb-1 text-slate-800">模板Ⅰ · 飲料外帶模式</h2>
-        <p class="text-sm text-slate-500">適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。</p>
+        <h2 data-i18n="mode-cafe-title" class="text-xl font-bold mb-1">模板Ⅰ · 飲料外帶模式</h2>
+        <p data-i18n="mode-cafe-desc" class="text-sm text-slate-500">適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。</p>
       </div>
       <div onclick="selectMode('restaurant')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
         <div class="text-5xl mb-4">🍜</div>
-        <h2 class="text-xl font-bold mb-1 text-slate-800">街邊吃飯模式</h2>
-        <p class="text-sm text-slate-500">適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。</p>
+        <h2 data-i18n="mode-rest-title" class="text-xl font-bold mb-1">街邊吃飯模式</h2>
+        <p data-i18n="mode-rest-desc" class="text-sm text-slate-500">適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。</p>
       </div>
     </div>
 
     <div id="create-panel" class="hidden fade-in bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
-      <h3 class="text-lg font-bold mb-4 text-orange-700">開新團</h3>
+      <h3 data-i18n="create-title" class="text-lg font-bold mb-4 text-orange-700">開新團</h3>
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-1 text-slate-700">團購名稱</label>
-          <input id="inp-room-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Friday ZUS、午餐・雜飯檔">
+          <label data-i18n="label-room-name" class="block text-sm font-medium mb-1">團購名稱</label>
+          <input id="inp-room-name" data-i18n-placeholder="placeholder-room-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Friday ZUS、午餐・雜飯檔">
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium mb-1 text-slate-700">你的暱稱</label>
-            <input id="inp-creator" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="發起人名字">
+            <label data-i18n="label-creator" class="block text-sm font-medium mb-1">你的暱稱</label>
+            <input id="inp-creator" data-i18n-placeholder="placeholder-creator" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="發起人名字">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1 text-slate-700">DuitNOW 收款 ID</label>
-            <input id="inp-duitnow" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="手機號碼 / 身分證 / 商戶號">
+            <label data-i18n="label-duitnow" class="block text-sm font-medium mb-1">DuitNOW 收款 ID</label>
+            <input id="inp-duitnow" data-i18n-placeholder="placeholder-duitnow" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="手機號碼 / 身分證 / 商戶號">
           </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium mb-1 text-slate-700">🔐 截單密碼 (設定一個你記得的數字)</label>
-          <input id="inp-pin" type="password" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：1234">
-          <p class="text-xs text-slate-400 mt-1">只有知道這個密碼才能結單。請牢記此密碼！</p>
-        </div>
-        <button onclick="createRoom()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">建立房間</button>
+        <button data-i18n="btn-create" onclick="createRoom()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">建立房間</button>
       </div>
     </div>
   </div>
@@ -132,66 +69,74 @@
       <div>
         <div class="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1" id="room-mode-badge">MODE</div>
         <h1 class="text-2xl font-bold text-slate-800" id="room-title">Room</h1>
-        <p class="text-sm text-slate-500">發起人：<span id="room-creator"></span></p>
+        <p class="text-sm text-slate-500"><span data-i18n="room-creator-label">發起人：</span><span id="room-creator"></span></p>
       </div>
       <div class="flex gap-2">
-        <button onclick="copyLink()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-slate-50">🔗 複製連結</button>
-        <button id="btn-close" onclick="closeRoom()" class="hidden px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold">🔒 結單</button>
+        <button data-i18n="btn-copy" onclick="copyLink()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-slate-50">🔗 複製連結</button>
+        <button id="btn-close" data-i18n="btn-close" onclick="closeRoom()" class="hidden px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold">🔒 結單</button>
       </div>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
       <div class="w-full lg:w-1/3">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-4">
-          <h2 class="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800">➕ 新增訂單</h2>
+          <h2 data-i18n="title-add-order" class="font-bold text-lg mb-4 flex items-center gap-2">➕ 新增訂單</h2>
           <div class="space-y-3">
             <div>
-              <label class="text-xs font-bold text-slate-500 uppercase">你的暱稱</label>
-              <input id="form-user" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="輸入名字">
+              <label data-i18n="label-your-nickname" class="text-xs font-bold text-slate-500 uppercase">你的暱稱</label>
+              <input id="form-user" data-i18n-placeholder="placeholder-your-nickname" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="輸入名字">
             </div>
 
             <div id="form-cafe" class="space-y-3">
               <div>
-                <label class="text-xs font-bold text-slate-500 uppercase">品項名稱</label>
-                <input id="cafe-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Mango Lassi">
+                <label data-i18n="label-item-name" class="text-xs font-bold text-slate-500 uppercase">品項名稱</label>
+                <input id="cafe-name" data-i18n-placeholder="placeholder-item-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Mango Lassi">
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-bold text-slate-500 uppercase">單價 (RM)</label>
+                  <label data-i18n="label-price" class="text-xs font-bold text-slate-500 uppercase">單價 (RM)</label>
                   <input id="cafe-price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="0.00">
                 </div>
                 <div>
-                  <label class="text-xs font-bold text-slate-500 uppercase">數量</label>
+                  <label data-i18n="label-qty" class="text-xs font-bold text-slate-500 uppercase">數量</label>
                   <input id="cafe-qty" type="number" value="1" min="1" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300">
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-bold text-slate-500 uppercase">甜度</label>
+                  <label data-i18n="label-sweet" class="text-xs font-bold text-slate-500 uppercase">甜度</label>
                   <select id="cafe-sweet" class="w-full border rounded-lg px-3 py-2 bg-white">
-                    <option>正常</option><option>少糖</option><option>半糖</option><option>微糖</option><option>無糖</option>
+                    <option value="sweet-normal" data-i18n="sweet-normal">正常</option>
+                    <option value="sweet-less" data-i18n="sweet-less">少糖</option>
+                    <option value="sweet-half" data-i18n="sweet-half">半糖</option>
+                    <option value="sweet-micro" data-i18n="sweet-micro">微糖</option>
+                    <option value="sweet-none" data-i18n="sweet-none">無糖</option>
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs font-bold text-slate-500 uppercase">冰塊</label>
+                  <label data-i18n="label-ice" class="text-xs font-bold text-slate-500 uppercase">冰塊</label>
                   <select id="cafe-ice" class="w-full border rounded-lg px-3 py-2 bg-white">
-                    <option>正常冰</option><option>少冰</option><option>微冰</option><option>去冰</option><option>溫熱</option>
+                    <option value="ice-normal" data-i18n="ice-normal">正常冰</option>
+                    <option value="ice-less" data-i18n="ice-less">少冰</option>
+                    <option value="ice-micro" data-i18n="ice-micro">微冰</option>
+                    <option value="ice-none" data-i18n="ice-none">去冰</option>
+                    <option value="ice-warm" data-i18n="ice-warm">溫熱</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label class="text-xs font-bold text-slate-500 uppercase">備註</label>
-                <input id="cafe-note" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Extra Shot">
+                <label data-i18n="label-note" class="text-xs font-bold text-slate-500 uppercase">備註</label>
+                <input id="cafe-note" data-i18n-placeholder="placeholder-note" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Extra Shot">
               </div>
             </div>
 
             <div id="form-restaurant" class="hidden space-y-3">
-              <div class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
+              <div data-i18n="rest-desc" class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
               <div id="rest-rows" class="space-y-2"></div>
-              <button onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新菜品</button>
+              <button data-i18n="btn-add-item" onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新增一道菜</button>
             </div>
 
-            <button onclick="submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">加入訂單</button>
+            <button data-i18n="btn-submit" onclick="submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">加入訂單</button>
           </div>
         </div>
       </div>
@@ -199,14 +144,14 @@
       <div class="w-full lg:w-2/3">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 min-h-[300px]">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-lg text-slate-800">📋 目前訂單</h2>
+            <h2 data-i18n="title-current-orders" class="font-bold text-lg">📋 目前訂單</h2>
             <div class="text-right">
-              <div class="text-xs text-slate-500">總計</div>
+              <div data-i18n="label-total" class="text-xs text-slate-500">總計</div>
               <div class="text-xl font-bold text-orange-600" id="display-total">RM 0.00</div>
             </div>
           </div>
           <div id="orders-list" class="space-y-3"></div>
-          <div id="empty-state" class="text-center text-slate-400 py-10">尚無訂單，趕快新增吧！</div>
+          <div id="empty-state" data-i18n="empty-state" class="text-center text-slate-400 py-10">尚無訂單，趕快新增吧！</div>
         </div>
       </div>
     </div>
@@ -215,19 +160,19 @@
   <div id="view-checkout" class="max-w-3xl mx-auto px-4 py-12 hidden">
     <div class="text-center mb-8">
       <div class="inline-block p-3 rounded-full bg-green-100 text-green-700 mb-3">✅</div>
-      <h1 class="text-3xl font-bold text-slate-800">已結單</h1>
-      <p class="text-slate-500">以下是這次揪團的總明細</p>
+      <h1 data-i18n="title-checked-out" class="text-3xl font-bold text-slate-800">已結單</h1>
+      <p data-i18n="subtitle-checked-out" class="text-slate-500">以下是這次揪團的總明細</p>
     </div>
 
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden mb-6">
       <div class="p-6">
         <div class="flex justify-between items-end mb-6">
           <div>
-            <div class="text-sm text-slate-500">團購名稱</div>
-            <div class="text-xl font-bold text-slate-800" id="co-name"></div>
+            <div data-i18n="label-room-name-summary" class="text-sm text-slate-500">團購名稱</div>
+            <div class="text-xl font-bold" id="co-name"></div>
           </div>
           <div class="text-right">
-            <div class="text-sm text-slate-500">總金額</div>
+            <div data-i18n="label-grand-total" class="text-sm text-slate-500">總金額</div>
             <div class="text-3xl font-bold text-orange-600" id="co-grand-total"></div>
           </div>
         </div>
@@ -236,9 +181,9 @@
           <table class="w-full text-left text-sm">
             <thead class="bg-slate-50 text-slate-600 font-bold">
               <tr>
-                <th class="p-3 rounded-tl-lg">團員</th>
-                <th class="p-3">品項明細</th>
-                <th class="p-3 text-right rounded-tr-lg">小計</th>
+                <th data-i18n="table-member" class="p-3 rounded-tl-lg">團員</th>
+                <th data-i18n="table-details" class="p-3">品項明細</th>
+                <th data-i18n="table-subtotal" class="p-3 text-right rounded-tr-lg">小計</th>
               </tr>
             </thead>
             <tbody id="co-table-body" class="divide-y divide-slate-100"></tbody>
@@ -248,8 +193,8 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 flex flex-col items-center text-center">
-      <h3 class="font-bold text-lg mb-2 text-slate-800">💳 付款資訊</h3>
-      <p class="text-slate-500 text-sm mb-4">請使用 DuitNOW 轉帳，並自行輸入上方金額</p>
+      <h3 data-i18n="title-payment-info" class="font-bold text-lg mb-2">💳 付款資訊</h3>
+      <p data-i18n="desc-payment-info" class="text-slate-500 text-sm mb-4">請使用 DuitNOW 轉帳，並自行輸入上方金額</p>
       <div class="mb-4">
         <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">DuitNOW ID</div>
         <div class="text-2xl font-mono font-bold text-slate-800" id="co-duitnow"></div>
@@ -257,62 +202,255 @@
       <div class="bg-slate-50 p-4 rounded-xl inline-block">
         <canvas id="qr-canvas"></canvas>
       </div>
-      <p class="text-xs text-slate-400 mt-2">掃描後即可取得收款資訊</p>
-      <button onclick="location.hash=''" class="mt-6 px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">回首頁</button>
-    </div>
-  </div>
-
-  <!-- PIN Modal for Closing -->
-  <div id="pin-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl p-6 max-w-sm mx-4">
-      <h3 class="text-xl font-bold mb-4 text-slate-800">🔐 輸入截單密碼</h3>
-      <p class="text-sm text-slate-600 mb-4">請輸入你在建立房間時設定的密碼</p>
-      <input id="pin-input" type="password" class="w-full border rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="密碼">
-      <div class="flex gap-2">
-        <button onclick="closePinModal()" class="flex-1 px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300">取消</button>
-        <button onclick="confirmClose()" class="flex-1 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-bold">確認結單</button>
-      </div>
+      <p data-i18n="desc-qr-info" class="text-xs text-slate-400 mt-2">掃描後即可取得收款資訊</p>
+      <button data-i18n="btn-home" onclick="location.hash=''" class="mt-6 px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">回首頁</button>
     </div>
   </div>
 
   <script>
-    // === Theme Management ===
-    function initTheme() {
-      const savedTheme = localStorage.getItem('theme') || 'light';
-      applyTheme(savedTheme);
-    }
-
-    function applyTheme(theme) {
-      const body = document.body;
-      if (theme === 'dark') {
-        body.classList.remove('light-mode');
-        body.classList.add('dark-mode');
-        document.getElementById('theme-icon').textContent = '☀️';
-      } else {
-        body.classList.remove('dark-mode');
-        body.classList.add('light-mode');
-        document.getElementById('theme-icon').textContent = '🌙';
+    // === i18n Dictionary ===
+    const i18n = {
+      zh: {
+        "app-title": "ShareShare · 無痛揪團與拆帳",
+        "app-subtitle": "臨時想要開個團？無需登錄即可開！",
+        "mode-cafe-title": "模板Ⅰ · 飲料外帶模式",
+        "mode-cafe-desc": "適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。",
+        "mode-rest-title": "街邊吃飯模式",
+        "mode-rest-desc": "適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。",
+        "create-title": "開新團",
+        "label-room-name": "團購名稱",
+        "placeholder-room-name": "例如：Friday ZUS、午餐・雜飯檔",
+        "label-creator": "你的暱稱",
+        "placeholder-creator": "發起人名字",
+        "label-duitnow": "DuitNOW 收款 ID",
+        "placeholder-duitnow": "手機號碼 / 身分證 / 商戶號",
+        "btn-create": "建立房間",
+        "btn-copy": "🔗 複製連結",
+        "btn-close": "🔒 結單",
+        "room-creator-label": "發起人：",
+        "title-add-order": "➕ 新增訂單",
+        "label-your-nickname": "你的暱稱",
+        "placeholder-your-nickname": "輸入名字",
+        "label-item-name": "品項名稱",
+        "placeholder-item-name": "例如：Mango Lassi",
+        "label-price": "單價 (RM)",
+        "label-qty": "數量",
+        "label-sweet": "甜度",
+        "label-ice": "冰塊",
+        "label-note": "備註",
+        "placeholder-note": "例如：Extra Shot",
+        "sweet-normal": "正常",
+        "sweet-less": "少糖",
+        "sweet-half": "半糖",
+        "sweet-micro": "微糖",
+        "sweet-none": "無糖",
+        "ice-normal": "正常冰",
+        "ice-less": "少冰",
+        "ice-micro": "微冰",
+        "ice-none": "去冰",
+        "ice-warm": "溫熱",
+        "rest-desc": "可自行輸入多道菜品",
+        "btn-add-item": "＋ 新增一道菜",
+        "btn-submit": "加入訂單",
+        "title-current-orders": "📋 目前訂單",
+        "label-total": "總計",
+        "empty-state": "尚無訂單，趕快新增吧！",
+        "btn-clone": "👆 跟著點這個",
+        "btn-delete": "刪除",
+        "title-checked-out": "已結單",
+        "subtitle-checked-out": "以下是這次揪團的總明細",
+        "label-room-name-summary": "團購名稱",
+        "label-grand-total": "總金額",
+        "table-member": "團員",
+        "table-details": "品項明細",
+        "table-subtotal": "小計",
+        "title-payment-info": "💳 付款資訊",
+        "desc-payment-info": "請使用 DuitNOW 轉帳，並自行輸入上方金額",
+        "desc-qr-info": "掃描後即可取得收款資訊",
+        "btn-home": "回首頁",
+        // Alerts
+        "alert-all-fields": "請填寫所有欄位",
+        "alert-no-room": "房間不存在或僅存在於發起人的瀏覽器中。",
+        "badge-cafe": "飲料外帶",
+        "badge-rest": "街邊吃飯",
+        "rest-placeholder-name": "菜品名稱",
+        "rest-placeholder-price": "單價",
+        "rest-placeholder-note": "備註",
+        "alert-input-nickname": "請輸入暱稱",
+        "alert-fill-item-price": "請填寫品項與單價",
+        "alert-fill-dishes": "請完整填寫菜品",
+        "alert-confirm-delete": "確定刪除這筆訂單？",
+        "alert-confirm-close": "結單後就無法再修改訂單，確定嗎？",
+        "alert-link-copied": "連結已複製！發給朋友就可以一起點餐囉！",
+        "friend-suffix": " 的朋友"
+      },
+      en: {
+        "app-title": "ShareShare · Seamless splits",
+        "app-subtitle": "Want to start a group? No login required!",
+        "mode-cafe-title": "Template I · Beverage Mode",
+        "mode-cafe-desc": "Best for: ZUS Coffee, bubble tea, bakery.<br>Built-in sugar & ice options.",
+        "mode-rest-title": "Dine-in / Street Food Mode",
+        "mode-rest-desc": "Best for: Mamak, food stalls, custom menus.<br>Freely enter item names and unit prices.",
+        "create-title": "Create New Group",
+        "label-room-name": "Group Name",
+        "placeholder-room-name": "e.g., Friday ZUS, Lunch @ Mamak",
+        "label-creator": "Your Nickname",
+        "placeholder-creator": "Organizer Name",
+        "label-duitnow": "DuitNOW Payment ID",
+        "placeholder-duitnow": "Phone No / IC / Merchant ID",
+        "btn-create": "Create Room",
+        "btn-copy": "🔗 Copy Link",
+        "btn-close": "🔒 Close Order",
+        "room-creator-label": "Organizer: ",
+        "title-add-order": "➕ Add Order",
+        "label-your-nickname": "Your Nickname",
+        "placeholder-your-nickname": "Enter nickname",
+        "label-item-name": "Item Name",
+        "placeholder-item-name": "e.g., Mango Lassi",
+        "label-price": "Price (RM)",
+        "label-qty": "Qty",
+        "label-sweet": "Sweetness",
+        "label-ice": "Ice Level",
+        "label-note": "Remarks",
+        "placeholder-note": "e.g., Extra Shot",
+        "sweet-normal": "Regular",
+        "sweet-less": "Less Sweet",
+        "sweet-half": "Half Sweet",
+        "sweet-micro": "Light Sweet",
+        "sweet-none": "No Sugar",
+        "ice-normal": "Regular Ice",
+        "ice-less": "Less Ice",
+        "ice-micro": "Light Ice",
+        "ice-none": "No Ice",
+        "ice-warm": "Warm",
+        "rest-desc": "Enter multiple dishes below",
+        "btn-add-item": "＋ Add a Dish",
+        "btn-submit": "Submit Order",
+        "title-current-orders": "📋 Current Orders",
+        "label-total": "Total",
+        "empty-state": "No orders yet, add one now!",
+        "btn-clone": "👆 Copy this",
+        "btn-delete": "Delete",
+        "title-checked-out": "Order Closed",
+        "subtitle-checked-out": "Here is the summary of this group order",
+        "label-room-name-summary": "Group Name",
+        "label-grand-total": "Grand Total",
+        "table-member": "Member",
+        "table-details": "Details",
+        "table-subtotal": "Subtotal",
+        "title-payment-info": "💳 Payment Info",
+        "desc-payment-info": "Please use DuitNOW to transfer the amount shown above",
+        "desc-qr-info": "Scan to get payment details",
+        "btn-home": "Back to Home",
+        // Alerts
+        "alert-all-fields": "Please fill in all fields",
+        "alert-no-room": "Room doesn't exist or only exists in the organizer's browser.",
+        "badge-cafe": "Beverage",
+        "badge-rest": "Dine-in",
+        "rest-placeholder-name": "Dish Name",
+        "rest-placeholder-price": "Price",
+        "rest-placeholder-note": "Remarks",
+        "alert-input-nickname": "Please enter your nickname",
+        "alert-fill-item-price": "Please fill in the item name and price",
+        "alert-fill-dishes": "Please complete all dish fields",
+        "alert-confirm-delete": "Are you sure you want to delete this order?",
+        "alert-confirm-close": "Once closed, orders cannot be modified. Are you sure?",
+        "alert-link-copied": "Link copied! Share it with friends to start ordering!",
+        "friend-suffix": "'s Friend"
       }
-      localStorage.setItem('theme', theme);
+    };
+
+    let currentLang = 'zh';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('split_bill_lang', lang);
+
+      const zhBtn = document.getElementById('lang-zh');
+      const enBtn = document.getElementById('lang-en');
+      if (lang === 'zh') {
+        zhBtn.className = "text-xs px-2 py-0.5 rounded transition font-bold bg-orange-500 text-white";
+        enBtn.className = "text-xs px-2 py-0.5 rounded transition text-slate-600 hover:bg-slate-100";
+        document.documentElement.lang = "zh-TW";
+        document.title = "ShareShare — 無痛揪團與拆帳";
+      } else {
+        zhBtn.className = "text-xs px-2 py-0.5 rounded transition text-slate-600 hover:bg-slate-100";
+        enBtn.className = "text-xs px-2 py-0.5 rounded transition font-bold bg-orange-500 text-white";
+        document.documentElement.lang = "en";
+        document.title = "ShareShare — Seamless splits";
+      }
+
+      // 替換 data-i18n 文字
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) {
+          if (i18n[lang][key].includes('<br>') || i18n[lang][key].includes('＋') || i18n[lang][key].includes('➕')) {
+            el.innerHTML = i18n[lang][key];
+          } else {
+            el.textContent = i18n[lang][key];
+          }
+        }
+      });
+
+      // 替換 Placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (i18n[lang][key]) {
+          el.placeholder = i18n[lang][key];
+        }
+      });
+
+      // 重新渲染動態區域
+      if (currentRoom) {
+        if (currentRoom.isClosed) {
+          renderCheckout();
+        } else {
+          renderRoom();
+        }
+      }
     }
 
-    function toggleTheme() {
-      const isDark = document.body.classList.contains('dark-mode');
-      applyTheme(isDark ? 'light' : 'dark');
+    function t(key) {
+      return i18n[currentLang][key] || key;
+    }
+
+    // 處理已儲存資料之語系轉換
+    function tValue(val) {
+      if (!val) return '';
+      if (i18n[currentLang][val]) return i18n[currentLang][val];
+      
+      // Legacy data fallback (e.g., database holds Chinese text, but current UI is English)
+      if (currentLang === 'en') {
+        for (const key in i18n.zh) {
+          if (i18n.zh[key] === val) return i18n.en[key];
+        }
+      } else {
+        for (const key in i18n.en) {
+          if (i18n.en[key] === val) return i18n.zh[key];
+        }
+      }
+      return val;
     }
 
     // === State ===
     let currentMode = 'cafe';
     let currentRoom = null;
     let hasServer = false;
-    let isCreator = false;
     const localRoomsKey = 'split_bill_rooms';
 
     // === Init ===
-    window.addEventListener('DOMContentLoaded', async () => {
-      initTheme();
-      await checkServer();
+    window.addEventListener('DOMContentLoaded', () => {
+      // 載入預設語系
+      const savedLang = localStorage.getItem('split_bill_lang') || 'zh';
+      setLanguage(savedLang);
+
       route();
+
+      checkServer().then(() => {
+        if (hasServer && location.hash.startsWith('#room=')) {
+          route();
+        }
+      });
     });
     window.addEventListener('hashchange', route);
 
@@ -326,7 +464,11 @@
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-        hasServer = r.ok;
+        if (r.ok) {
+          hasServer = true;
+        } else {
+          hasServer = false;
+        }
       } catch(e) { 
         hasServer = false; 
       }
@@ -371,7 +513,6 @@
       });
       document.getElementById('view-home').classList.remove('hidden');
       document.getElementById('create-panel').classList.add('hidden');
-      isCreator = false;
     }
 
     // === Home Actions ===
@@ -385,10 +526,9 @@
       const name = document.getElementById('inp-room-name').value.trim();
       const creator = document.getElementById('inp-creator').value.trim();
       const duitNowId = document.getElementById('inp-duitnow').value.trim();
-      const pin = document.getElementById('inp-pin').value.trim();
 
-      if (!name || !creator || !duitNowId || !pin) {
-        alert('請填寫所有欄位，包含截單密碼');
+      if (!name || !creator || !duitNowId) {
+        alert(t('alert-all-fields'));
         return;
       }
 
@@ -398,7 +538,6 @@
         mode: currentMode,
         creator,
         duitNowId,
-        pin,
         isClosed: false,
         orders: [],
         createdAt: Date.now()
@@ -409,36 +548,26 @@
         if (res) Object.assign(room, res);
       }
       saveLocal(room);
-      isCreator = true;
       location.hash = `room=${room.id}`;
     }
 
     // === Room Load ===
     async function loadRoom(id) {
       let room = null;
-
-      // 優先從伺服器獲取最新房間數據
       if (hasServer) {
         room = await api(`/api/rooms/${id}`);
       }
-
-      // 如果伺服器沒有，從本地存儲加載
       if (!room) {
         room = loadLocal(id);
       }
 
       if (!room) {
-        alert('房間不存在或已過期。');
+        alert(t('alert-no-room'));
         location.hash = '';
         return;
       }
 
       currentRoom = room;
-      
-      // 判斷是否是發起人：如果本地有房間且包含 PIN，則是發起人
-      const localRoom = loadLocal(id);
-      isCreator = (localRoom && localRoom.pin) ? true : false;
-
       if (room.isClosed) {
         renderCheckout();
       } else {
@@ -455,7 +584,7 @@
       const r = currentRoom;
       document.getElementById('room-title').textContent = r.name;
       document.getElementById('room-creator').textContent = r.creator;
-      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? '飲料外帶' : '街邊吃飯';
+      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? t('badge-cafe') : t('badge-rest');
 
       if (r.mode === 'cafe') {
         document.getElementById('form-cafe').classList.remove('hidden');
@@ -466,13 +595,9 @@
         if (document.getElementById('rest-rows').children.length === 0) addRestRow();
       }
 
-      // 只有發起人才能看到結單按鈕
       const btnClose = document.getElementById('btn-close');
-      if (isCreator) {
-        btnClose.classList.remove('hidden');
-      } else {
-        btnClose.classList.add('hidden');
-      }
+      if (loadLocal(r.id)) btnClose.classList.remove('hidden');
+      else btnClose.classList.add('hidden');
 
       renderOrders();
     }
@@ -483,10 +608,10 @@
       const div = document.createElement('div');
       div.className = 'grid grid-cols-12 gap-2 items-center';
       div.innerHTML = `
-        <input data-name placeholder="菜品名稱" class="col-span-4 border rounded px-2 py-1 text-sm">
-        <input data-price type="number" step="0.01" placeholder="單價" class="col-span-3 border rounded px-2 py-1 text-sm">
+        <input data-name placeholder="${t('rest-placeholder-name')}" class="col-span-4 border rounded px-2 py-1 text-sm">
+        <input data-price type="number" step="0.01" placeholder="${t('rest-placeholder-price')}" class="col-span-3 border rounded px-2 py-1 text-sm">
         <input data-qty type="number" value="1" min="1" class="col-span-2 border rounded px-2 py-1 text-sm">
-        <input data-note placeholder="備註" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <input data-note placeholder="${t('rest-placeholder-note')}" class="col-span-2 border rounded px-2 py-1 text-sm">
         <button onclick="this.parentElement.remove()" class="col-span-1 text-rose-500 font-bold">🗑️</button>
       `;
       container.appendChild(div);
@@ -494,7 +619,7 @@
 
     function submitOrder() {
       const user = document.getElementById('form-user').value.trim();
-      if (!user) { alert('請輸入暱稱'); return; }
+      if (!user) { alert(t('alert-input-nickname')); return; }
 
       const r = currentRoom;
       const items = [];
@@ -508,7 +633,7 @@
         const ice = document.getElementById('cafe-ice').value;
         const note = document.getElementById('cafe-note').value.trim();
 
-        if (!name || isNaN(price)) { alert('請填寫品項與單價'); return; }
+        if (!name || isNaN(price)) { alert(t('alert-fill-item-price')); return; }
         for(let i=0;i<qty;i++) {
           items.push({ name, price, sweet, ice, note });
         }
@@ -526,7 +651,7 @@
           if (!name || isNaN(price)) { valid = false; return; }
           items.push({ name, unitPrice: price, qty, note });
         });
-        if (!valid || items.length === 0) { alert('請完整填寫菜品'); return; }
+        if (!valid || items.length === 0) { alert(t('alert-fill-dishes')); return; }
         document.getElementById('rest-rows').innerHTML = '';
         addRestRow();
       }
@@ -551,7 +676,7 @@
     function cloneOrder(orderId) {
       const order = currentRoom.orders.find(o => o.id === orderId);
       if (!order) return;
-      const user = document.getElementById('form-user').value.trim() || order.userName + '的朋友';
+      const user = document.getElementById('form-user').value.trim() || order.userName + t('friend-suffix');
       const newOrder = {
         id: 'o_' + Date.now(),
         userName: user,
@@ -568,7 +693,7 @@
     }
 
     function deleteOrder(orderId) {
-      if (!confirm('確定刪除這筆訂單？')) return;
+      if (!confirm(t('alert-confirm-delete'))) return;
       currentRoom.orders = currentRoom.orders.filter(o => o.id !== orderId);
       if (hasServer) {
         api(`/api/rooms/${currentRoom.id}/orders/${orderId}`, 'DELETE').then(() => renderOrders());
@@ -601,7 +726,7 @@
         if (r.mode === 'cafe') {
           order.items.forEach(it => {
             orderTotal += (it.price || 0);
-            itemText += `<div class="text-sm text-slate-700">• ${it.name} <span class="text-slate-400 text-xs">(${it.sweet}/${it.ice})</span> <span class="font-bold">RM ${it.price.toFixed(2)}</span></div>`;
+            itemText += `<div class="text-sm text-slate-700">• ${it.name} <span class="text-slate-400 text-xs">(${tValue(it.sweet)}/${tValue(it.ice)})</span> <span class="font-bold">RM ${it.price.toFixed(2)}</span></div>`;
           });
         } else {
           order.items.forEach(it => {
@@ -624,8 +749,8 @@
             </div>
           </div>
           <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
-            <button onclick="cloneOrder('${order.id}')" class="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded hover:bg-orange-100">👆 跟著點這個</button>
-            <button onclick="deleteOrder('${order.id}')" class="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded hover:bg-slate-100">刪除</button>
+            <button onclick="cloneOrder('${order.id}')" class="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded hover:bg-orange-100">${t('btn-clone')}</button>
+            <button onclick="deleteOrder('${order.id}')" class="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded hover:bg-slate-100">${t('btn-delete')}</button>
           </div>
         `;
         container.appendChild(el);
@@ -634,99 +759,8 @@
       document.getElementById('display-total').textContent = `RM ${grandTotal.toFixed(2)}`;
     }
 
-    function closeRoom() {
-      const r = currentRoom;
-      
-      if (r.orders.length === 0) {
-        const confirmed = confirm('⚠️ 目前沒有任何訂單，你確定要在無訂單的情況下結束本次的凑單嗎？');
-        if (!confirmed) return;
-      }
-
-      document.getElementById('pin-modal').classList.remove('hidden');
-      document.getElementById('pin-input').value = '';
-      document.getElementById('pin-input').focus();
-    }
-
-    function closePinModal() {
-      document.getElementById('pin-modal').classList.add('hidden');
-    }
-
-    async function confirmClose() {
-      const inputPin = document.getElementById('pin-input').value.trim();
-      if (!inputPin) {
-        alert('請輸入密碼');
-        return;
-      }
-
-      if (inputPin !== currentRoom.pin) {
-        alert('❌ 密碼錯誤！');
-        document.getElementById('pin-input').value = '';
-        return;
-      }
-
-      if (!confirm('結單後就無法再修改訂單，確定嗎？')) return;
-
+    async function closeRoom() {
+      if (!confirm(t('alert-confirm-close'))) return;
       currentRoom.isClosed = true;
       if (hasServer) {
-        await api(`/api/rooms/${currentRoom.id}/close`, 'POST', { pin: inputPin });
-      } else {
-        saveLocal(currentRoom);
-      }
-      
-      closePinModal();
-      renderCheckout();
-    }
-
-    function renderCheckout() {
-      document.getElementById('view-home').classList.add('hidden');
-      document.getElementById('view-room').classList.add('hidden');
-      document.getElementById('view-checkout').classList.remove('hidden');
-
-      const r = currentRoom;
-      document.getElementById('co-name').textContent = r.name;
-      document.getElementById('co-duitnow').textContent = r.duitNowId;
-
-      const tbody = document.getElementById('co-table-body');
-      tbody.innerHTML = '';
-      let grand = 0;
-
-      r.orders.forEach(order => {
-        let sub = 0;
-        let details = [];
-        if (r.mode === 'cafe') {
-          order.items.forEach(it => {
-            sub += (it.price || 0);
-            details.push(`${it.name} (${it.sweet}/${it.ice})`);
-          });
-        } else {
-          order.items.forEach(it => {
-            const itemSub = (it.unitPrice || 0) * (it.qty || 1);
-            sub += itemSub;
-            details.push(`${it.name} x${it.qty}`);
-          });
-        }
-        grand += sub;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-3 font-bold text-slate-800">${order.userName}</td>
-          <td class="p-3 text-slate-600 text-xs">${details.join('、')}</td>
-          <td class="p-3 text-right font-bold text-slate-800">RM ${sub.toFixed(2)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('co-grand-total').textContent = `RM ${grand.toFixed(2)}`;
-
-      const canvas = document.getElementById('qr-canvas');
-      QRCode.toCanvas(canvas, r.duitNowId, { width: 160, margin: 2 }, function (error) {
-        if (error) console.error(error);
-      });
-    }
-
-    function copyLink() {
-      navigator.clipboard.writeText(window.location.href);
-      alert('連結已複製！發給朋友就可以一起點餐囉！');
-    }
-  </script>
-</body>
-</html>
+        await api(`/api/rooms/${currentRoom.id}/close`, 'POST');
