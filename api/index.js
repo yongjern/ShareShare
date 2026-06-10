@@ -1,15 +1,27 @@
 const express = require('express');
-const cors = require('cors'); // 如果你的前端跟後端在不同網域，會需要用到 CORS
+const cors = require('cors');
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 
-// 暫存在記憶體的資料庫 (提醒：伺服器重啟資料會清空。若要正式上線，建議替換成資料庫存取)
+// 暫存在記憶體的資料庫
 const rooms = {};
 
-// 1. 伺服器健康檢查 (前端用來判斷要走 Server 還是 LocalStorage)
+// 24 小時自動清理機制
+const ROOM_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+function scheduleRoomCleanup(roomId) {
+  setTimeout(() => {
+    if (rooms[roomId]) {
+      console.log(`[AUTO-CLEANUP] Deleting room: ${roomId}`);
+      delete rooms[roomId];
+    }
+  }, ROOM_EXPIRY_MS);
+}
+
+// 1. 伺服器健康檢查
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
@@ -18,8 +30,19 @@ app.get('/api/health', (req, res) => {
 app.post('/api/rooms', (req, res) => {
   const roomData = req.body;
   
+  // 驗證必要欄位
+  if (!roomData.id || !roomData.pin) {
+    return res.status(400).json({ error: '缺少房間ID或PIN碼' });
+  }
+  
   // 將房間資料存入記憶體
-  rooms[roomData.id] = roomData;
+  rooms[roomData.id] = {
+    ...roomData,
+    createdAt: Date.now()
+  };
+  
+  // 排程 24 小時後自動刪除
+  scheduleRoomCleanup(roomData.id);
   
   res.status(201).json(roomData);
 });
@@ -33,11 +56,11 @@ app.get('/api/rooms/:id', (req, res) => {
     return res.status(404).json({ error: '找不到該房間，可能已經過期或被刪除。' });
   }
 
-  // 為了安全起見，你可以選擇在回傳給所有人時，把 pin 碼濾掉，避免被人用 F12 看光
-  // const safeRoomData = { ...room };
-  // delete safeRoomData.pin;
+  // 為了安全起見，不回傳 PIN 碼給其他人
+  const safeRoomData = { ...room };
+  delete safeRoomData.pin;
   
-  res.status(200).json(room);
+  res.status(200).json(safeRoomData);
 });
 
 // 4. 新增訂單
@@ -53,7 +76,6 @@ app.post('/api/rooms/:id/orders', (req, res) => {
     return res.status(400).json({ error: '此房間已結單，無法再新增訂單！' });
   }
 
-  // 將訂單加入該房間
   room.orders.push(orderData);
   res.status(201).json(orderData);
 });
@@ -70,15 +92,14 @@ app.delete('/api/rooms/:roomId/orders/:orderId', (req, res) => {
     return res.status(400).json({ error: '此房間已結單，無法刪除訂單！' });
   }
 
-  // 過濾掉要刪除的那筆訂單
   room.orders = room.orders.filter(o => o.id !== orderId);
   res.status(200).json({ message: '訂單已刪除' });
 });
 
-// 6. 結單 (包含密碼驗證)
+// 6. 結單 (PIN 密碼驗證 + 自動刪除)
 app.post('/api/rooms/:id/close', (req, res) => {
   const roomId = req.params.id;
-  const { pin } = req.body; // 接收前端傳來的密碼
+  const { pin } = req.body;
   const room = rooms[roomId];
 
   if (!room) {
@@ -88,14 +109,19 @@ app.post('/api/rooms/:id/close', (req, res) => {
     return res.status(400).json({ error: '房間已經是結單狀態！' });
   }
 
-  // 核心：密碼比對驗證
-  if (room.pin !== pin) {
-    return res.status(403).json({ error: '密碼錯誤！只有知道密碼的發起人才能截單喔！' });
+  // PIN 密碼驗證
+  if (!pin || room.pin !== pin) {
+    return res.status(403).json({ error: '❌ 密碼錯誤！只有知道密碼的發起人才能截單喔！' });
   }
 
   // 密碼正確，更新狀態為已結單
   room.isClosed = true;
-  res.status(200).json({ message: '結單成功！', room });
+  room.closedAt = Date.now();
+  
+  // 排程在 24 小時後自動刪除該房間
+  scheduleRoomCleanup(roomId);
+  
+  res.status(200).json({ message: '✅ 結單成功！此房間將在 24 小時後自動刪除。', room: { id: room.id, name: room.name, isClosed: true } });
 });
 
 // 啟動伺服器
