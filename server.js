@@ -1,69 +1,69 @@
-// server.js
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(express.json());
 
-// CORS：開發時允許前端跨域
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// 讓 Express 託管 public 資料夾裡的靜態網頁 (index.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 極輕量 In-memory 資料庫 (重開後資料消失，最適合臨時揪團)
-const rooms = new Map();
+// 記憶體暫存（注意：Vercel Serverless 閒置過久會重置清除，點餐暫存夠用，長久儲存建議連資料庫）
+const rooms = {};
 
-// Health check
+// 健康檢查端點
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', backend: true });
+  res.json({ ok: true });
 });
 
 // 建立房間
 app.post('/api/rooms', (req, res) => {
   const room = req.body;
-  if (!room || !room.id) {
-    return res.status(400).json({ error: 'Invalid room payload' });
-  }
-  rooms.set(room.id, room);
-  console.log(`[CREATE] Room "${room.name}" (${room.id}) by ${room.creator}`);
-  res.status(201).json(room);
+  rooms[room.id] = room;
+  res.json(room);
 });
 
-// 取得房間
+// 讀取房間
 app.get('/api/rooms/:id', (req, res) => {
-  const room = rooms.get(req.params.id);
-  if (!room) {
-    return res.status(404).json({ error: 'Room not found' });
-  }
+  const room = rooms[req.params.id];
+  if (!room) return res.status(404).json({ error: 'Room not found' });
   res.json(room);
 });
 
-// 更新房間（追加訂單、結單都走這裡）
-app.put('/api/rooms/:id', (req, res) => {
+// 新增訂單項目
+app.post('/api/rooms/:id/orders', (req, res) => {
   const { id } = req.params;
-  if (!rooms.has(id)) {
-    return res.status(404).json({ error: 'Room not found' });
-  }
-  const room = req.body;
-  if (!room || room.id !== id) {
-    return res.status(400).json({ error: 'ID mismatch' });
-  }
-  rooms.set(id, room);
-  res.json(room);
+  if (!rooms[id]) return res.status(404).json({ error: 'Room not found' });
+  rooms[id].orders.push(req.body);
+  res.json({ success: true });
 });
 
-// 若你有 public/index.html，可直接用 http://localhost:3000 開啟
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log('Press Ctrl+C to stop.');
+// 刪除特定訂單
+app.delete('/api/rooms/:id/orders/:orderId', (req, res) => {
+  const { id, orderId } = req.params;
+  if (!rooms[id]) return res.status(404).json({ error: 'Room not found' });
+  rooms[id].orders = rooms[id].orders.filter(o => o.id !== orderId);
+  res.json({ success: true });
 });
+
+// 結單
+app.post('/api/rooms/:id/close', (req, res) => {
+  const { id } = req.params;
+  if (!rooms[id]) return res.status(404).json({ error: 'Room not found' });
+  rooms[id].isClosed = true;
+  res.json({ success: true });
+});
+
+// 兜底路由：前端SPA重新整理不會404
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// 本地開發測試環境監聽
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`本地開發伺服器運行中: http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
