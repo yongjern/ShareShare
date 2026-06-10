@@ -1,0 +1,12 @@
+{
+  "name": "split-bill-app",
+  "version": "1.0.0",
+  "description": "無痛揪團與拆帳工具",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
