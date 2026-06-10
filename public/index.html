@@ -3,166 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>湊單拆帳神器</title>
-  
+  <title>無痛揪團與拆帳</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
-    /* 預設：淺色模式變數 */
-    :root {
-      --bg-color: #f5f6fa;
-      --text-color: #2f3640;
-      --card-bg: #ffffff;
-      --border-color: #dcdde1;
-      --primary-btn: #0097e6;
-      --primary-btn-hover: #00a8ff;
-      --input-bg: #ffffff;
-    }
-
-    /* 當 body 被加上 [data-theme="dark"] 時，自動切換成深色模式變數 */
-    [data-theme="dark"] {
-      --bg-color: #1e272e;
-      --text-color: #f5f6fa;
-      --card-bg: #2f3640;
-      --border-color: #718093;
-      --primary-btn: #4bcffa;
-      --primary-btn-hover: #0fbcf9;
-      --input-bg: #3d4d5e;
-    }
-
-    /* 應用變數到網頁畫面上 */
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 40px 20px;
-      transition: background-color 0.3s, color 0.3s;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      max-width: 500px;
-      width: 100%;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      position: relative;
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 24px;
-    }
-
-    /* 右上角漂亮的日夜切換按鈕 */
-    .theme-toggle-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      padding: 8px 14px;
-      cursor: pointer;
-      border-radius: 20px;
-      border: 1px solid var(--border-color);
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-weight: bold;
-      transition: all 0.2s;
-    }
-
-    /* 表單輸入框樣式 */
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      background-color: var(--input-bg);
-      color: var(--text-color);
-      box-sizing: border-box;
-    }
-
-    button.main-btn {
-      width: 100%;
-      padding: 12px;
-      background-color: var(--primary-btn);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s;
-    }
-
-    button.main-btn:hover {
-      background-color: var(--primary-btn-hover);
-    }
+    .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+    .mode-card { transition: all .2s ease; }
+    .mode-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
   </style>
-  </head>
-<body>
+</head>
+<body class="bg-orange-50 text-slate-800 min-h-screen font-sans">
 
-  <div class="container">
-    <button id="themeToggle" class="theme-toggle-btn">🌙 暗黑模式</button>
+  <div id="view-home" class="max-w-4xl mx-auto px-4 py-12 hidden">
+    <div class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-orange-600 mb-2">🛒 無痛揪團與拆帳</h1>
+      <p class="text-slate-500">免註冊、免登入，開團點餐不亂套</p>
+    </div>
 
-    <h1> Let's 湊單！</h1>
-    
-    <div id="create-room-section">
-      <div class="form-group">
-        <label for="roomName">房間名稱</label>
-        <input type="text" id="roomName" placeholder="例如：下午茶 ZUS Coffee 團">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div onclick="selectMode('cafe')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🧋</div>
+        <h2 class="text-xl font-bold mb-1">飲料外帶模式</h2>
+        <p class="text-sm text-slate-500">適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。</p>
       </div>
-      <div class="form-group">
-        <label for="roomPin">截單安全密碼 (數字)</label>
-        <input type="password" id="roomPin" placeholder="請輸入密碼，截單時會用到">
+      <div onclick="selectMode('restaurant')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🍜</div>
+        <h2 class="text-xl font-bold mb-1">街邊吃飯模式</h2>
+        <p class="text-sm text-slate-500">適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。</p>
       </div>
-      <button class="main-btn" onclick="createRoom()">建立新湊單</button>
+    </div>
+
+    <div id="create-panel" class="hidden fade-in bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
+      <h3 class="text-lg font-bold mb-4 text-orange-700">開新團</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">團購名稱</label>
+          <input id="inp-room-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Friday ZUS、午餐・雜飯檔">
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">你的暱稱</label>
+            <input id="inp-creator" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="發起人名字">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">DuitNOW 收款 ID</label>
+            <input id="inp-duitnow" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="手機號碼 / 身分證 / 商戶號">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">🔒 截單密碼</label>
+          <input id="inp-pin" type="password" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="請設定一組數字密碼，截單時需輸入">
+        </div>
+        <button onclick="createRoom()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">建立房間</button>
+      </div>
     </div>
   </div>
 
-  <script>
-    // 1. 日夜模式切換按鈕點擊事件
-    const themeToggle = document.getElementById('themeToggle');
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = document.body.getAttribute('data-theme');
-      if (currentTheme === 'dark') {
-        document.body.removeAttribute('data-theme');
-        themeToggle.textContent = '🌙 暗黑模式';
-      } else {
-        document.body.setAttribute('data-theme', 'dark');
-        themeToggle.textContent = '☀️ 淺色模式';
-      }
-    });
+  <div id="view-room" class="max-w-6xl mx-auto px-4 py-6 hidden">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+      <div>
+        <div class="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1" id="room-mode-badge">MODE</div>
+        <h1 class="text-2xl font-bold text-slate-800" id="room-title">Room</h1>
+        <p class="text-sm text-slate-500">發起人：<span id="room-creator"></span></p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="copyLink()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-slate-50">🔗 複製連結</button>
+        <button id="btn-close" onclick="closeRoom()" class="hidden px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold">🔒 結單</button>
+      </div>
+    </div>
 
-    // 2. 建立房間的串接
-    async function createRoom() {
-      const name = document.getElementById('roomName').value;
-      const pin = document.getElementById('roomPin').value;
+    <div class="flex flex-col lg:flex-row gap-6">
+      <div class="w-full lg:w-1/3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-4">
+          <h2 class="font-bold text-lg mb-4 flex items-center gap-2">➕ 新增訂單</h2>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">你的暱稱</label>
+              <input id="form-user" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="輸入名字">
+            </div>
 
-      if (!name || !pin) {
-        return alert('請填寫房間名稱與設定截單密碼唷！');
-      }
+            <div id="form-cafe" class="space-y-3">
+              <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">品項名稱</label>
+                <input id="cafe-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Mango Lassi">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase">單價 (RM)</label>
+                  <input id="cafe-price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="0.00">
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase">數量</label>
+                  <input id="cafe-qty" type="number" value="1" min="1" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase">甜度</label>
+                  <select id="cafe-sweet" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option>正常</option><option>少糖</option><option>半糖</option><option>微糖</option><option>無糖</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase">冰塊</label>
+                  <select id="cafe-ice" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option>正常冰</option><option>少冰</option><option>微冰</option><option>去冰</option><option>溫熱</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">備註</label>
+                <input id="cafe-note" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Extra Shot">
+              </div>
+            </div>
 
-      const roomId = Math.random().toString(36).substr(2, 9);
-      
-      const response = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: roomId, name: name, pin: pin })
-      });
+            <div id="form-restaurant" class="hidden space-y-3">
+              <div class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
+              <div id="rest-rows" class="space-y-2"></div>
+              <button onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新增一道菜</button>
+            </div>
 
-      if (response.ok) {
-        alert(`房間建立成功！\n房間連結: ${window.location.origin}/?room=${roomId}\n請牢記密碼：${pin}`);
-      } else {
-        alert('建立失敗，請稍後再試！');
-      }
-    }
-  </script>
-</body>
-</html>
+            <button onclick="submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">加入訂單</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full lg:w-2/3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 min-h-[300px]">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-lg">📋 目前訂單</h2>
+            <div class="text-right">
+              <div class="text-xs text-slate-500">總計</div>
+              <div class="text-xl font-bold text-orange-600" id="display-total">RM 0.00</div>
+            </div>
+          </div>
+          <div id="orders-list" class="space-y-3"></div>
+          <div id="empty-state" class="text-center text-slate-400 py-10">尚無訂單，
