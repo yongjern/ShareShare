@@ -30,9 +30,9 @@ app.get('/api/health', (req, res) => {
 app.post('/api/rooms', (req, res) => {
   const roomData = req.body;
   
-  // 驗證必要欄位
-  if (!roomData.id || !roomData.pin) {
-    return res.status(400).json({ error: '缺少房間ID或PIN碼' });
+  // 驗證必要欄位（已移除 PIN 密碼欄位限制）
+  if (!roomData.id) {
+    return res.status(400).json({ error: '缺少房間ID' });
   }
   
   // 將房間資料存入記憶體
@@ -47,7 +47,7 @@ app.post('/api/rooms', (req, res) => {
   res.status(201).json(roomData);
 });
 
-// 3. 取得房間資料（其他人進入時用，不返回 PIN）
+// 3. 取得房間資料
 app.get('/api/rooms/:id', (req, res) => {
   const roomId = req.params.id;
   const room = rooms[roomId];
@@ -56,11 +56,7 @@ app.get('/api/rooms/:id', (req, res) => {
     return res.status(404).json({ error: '找不到該房間，可能已經過期或被刪除。' });
   }
 
-  // 為了安全起見，不回傳 PIN 碼給其他人
-  const safeRoomData = { ...room };
-  delete safeRoomData.pin;
-  
-  res.status(200).json(safeRoomData);
+  res.status(200).json(room);
 });
 
 // 4. 新增訂單
@@ -96,10 +92,9 @@ app.delete('/api/rooms/:roomId/orders/:orderId', (req, res) => {
   res.status(200).json({ message: '訂單已刪除' });
 });
 
-// 6. 結單 (PIN 密碼驗證 + 自動刪除)
+// 6. 結單 (已移除 PIN 驗證)
 app.post('/api/rooms/:id/close', (req, res) => {
   const roomId = req.params.id;
-  const { pin } = req.body;
   const room = rooms[roomId];
 
   if (!room) {
@@ -109,12 +104,7 @@ app.post('/api/rooms/:id/close', (req, res) => {
     return res.status(400).json({ error: '房間已經是結單狀態！' });
   }
 
-  // PIN 密碼驗證
-  if (!pin || room.pin !== pin) {
-    return res.status(403).json({ error: '❌ 密碼錯誤！只有知道密碼的發起人才能截單喔！' });
-  }
-
-  // 密碼正確，更新狀態為已結單
+  // 更新狀態為已結單
   room.isClosed = true;
   room.closedAt = Date.now();
   
