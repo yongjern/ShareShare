@@ -16,11 +16,10 @@
 </head>
 <body class="bg-orange-50 text-slate-800 min-h-screen font-sans">
 
-  <!-- 首頁 -->
   <div id="view-home" class="max-w-4xl mx-auto px-4 py-12 hidden">
     <div class="text-center mb-10">
       <h1 class="text-4xl font-bold text-orange-600 mb-2">🛒 無痛揪團與拆帳</h1>
-      <p class="text-slate-500">免註冊、免登入，開團點餐不亂�</p>
+      <p class="text-slate-500">免註冊、免登入，開團點餐不亂套</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -58,7 +57,6 @@
     </div>
   </div>
 
-  <!-- 房間頁 -->
   <div id="view-room" class="max-w-6xl mx-auto px-4 py-6 hidden">
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div>
@@ -73,7 +71,6 @@
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
-      <!-- 左：點餐表單 -->
       <div class="w-full lg:w-1/3">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-4">
           <h2 class="font-bold text-lg mb-4 flex items-center gap-2">➕ 新增訂單</h2>
@@ -83,7 +80,6 @@
               <input id="form-user" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="輸入名字">
             </div>
 
-            <!-- Cafe Mode Form -->
             <div id="form-cafe" class="space-y-3">
               <div>
                 <label class="text-xs font-bold text-slate-500 uppercase">品項名稱</label>
@@ -119,7 +115,6 @@
               </div>
             </div>
 
-            <!-- Restaurant Mode Form -->
             <div id="form-restaurant" class="hidden space-y-3">
               <div class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
               <div id="rest-rows" class="space-y-2"></div>
@@ -131,7 +126,6 @@
         </div>
       </div>
 
-      <!-- 右：訂單總覽 -->
       <div class="w-full lg:w-2/3">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 min-h-[300px]">
           <div class="flex justify-between items-center mb-4">
@@ -148,7 +142,6 @@
     </div>
   </div>
 
-  <!-- 結單頁 -->
   <div id="view-checkout" class="max-w-3xl mx-auto px-4 py-12 hidden">
     <div class="text-center mb-8">
       <div class="inline-block p-3 rounded-full bg-green-100 text-green-700 mb-3">✅</div>
@@ -258,7 +251,6 @@
         document.getElementById(id).classList.add('hidden');
       });
       document.getElementById('view-home').classList.remove('hidden');
-      // Reset create form
       document.getElementById('create-panel').classList.add('hidden');
     }
 
@@ -309,8 +301,7 @@
       }
 
       if (!room) {
-        // Demo: allow creating a fresh room on the spot if not found (for static file demo)
-        alert('房間不存在或僅存在於發起人的瀏覽器中。\n（若已部署後端，請確認 backend 已啟動）');
+        alert('房間不存在或僅存在於發起人的瀏覽器中。');
         location.hash = '';
         return;
       }
@@ -334,20 +325,16 @@
       document.getElementById('room-creator').textContent = r.creator;
       document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? '飲料外帶' : '街邊吃飯';
 
-      // UI per mode
       if (r.mode === 'cafe') {
         document.getElementById('form-cafe').classList.remove('hidden');
         document.getElementById('form-restaurant').classList.add('hidden');
       } else {
         document.getElementById('form-cafe').classList.add('hidden');
         document.getElementById('form-restaurant').classList.remove('hidden');
-        // ensure at least one row
         if (document.getElementById('rest-rows').children.length === 0) addRestRow();
       }
 
-      // Owner sees close button
       const btnClose = document.getElementById('btn-close');
-      // simplistic ownership: if this browser created it, it's in localStorage
       if (loadLocal(r.id)) btnClose.classList.remove('hidden');
       else btnClose.classList.add('hidden');
 
@@ -357,7 +344,6 @@
     // === Order Submission ===
     function addRestRow() {
       const container = document.getElementById('rest-rows');
-      const id = 'rr_' + Math.random().toString(36).substr(2, 5);
       const div = document.createElement('div');
       div.className = 'grid grid-cols-12 gap-2 items-center';
       div.innerHTML = `
@@ -391,7 +377,6 @@
           items.push({ name, price, sweet, ice, note });
         }
 
-        // Reset form
         ['cafe-name','cafe-price','cafe-note'].forEach(id => document.getElementById(id).value='');
         document.getElementById('cafe-qty').value = 1;
       } else {
@@ -418,10 +403,14 @@
       };
 
       r.orders.push(order);
-      persist().then(() => {
+      
+      // 同步回伺服器或本地
+      if (hasServer) {
+        api(`/api/rooms/${r.id}/orders`, 'POST', order).then(() => renderOrders());
+      } else {
+        saveLocal(r);
         renderOrders();
-        document.getElementById('form-user').value = user; // keep name
-      });
+      }
     }
 
     function cloneOrder(orderId) {
@@ -435,16 +424,25 @@
         addedAt: Date.now()
       };
       currentRoom.orders.push(newOrder);
-      persist().then(renderOrders);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders`, 'POST', newOrder).then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
     }
 
     function deleteOrder(orderId) {
       if (!confirm('確定刪除這筆訂單？')) return;
       currentRoom.orders = currentRoom.orders.filter(o => o.id !== orderId);
-      persist().then(renderOrders);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders/${orderId}`, 'DELETE').then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
     }
 
-    // === Render Orders ===
     function renderOrders() {
       const container = document.getElementById('orders-list');
       const r = currentRoom;
@@ -500,14 +498,18 @@
       document.getElementById('display-total').textContent = `RM ${grandTotal.toFixed(2)}`;
     }
 
-    // === Checkout ===
     async function closeRoom() {
       if (!confirm('結單後就無法再修改訂單，確定嗎？')) return;
       currentRoom.isClosed = true;
-      await persist();
+      if (hasServer) {
+        await api(`/api/rooms/${currentRoom.id}/close`, 'POST');
+      } else {
+        saveLocal(currentRoom);
+      }
       renderCheckout();
     }
 
+    // === 修正：補齊原先被截斷的 Checkout 渲染邏輯 ===
     function renderCheckout() {
       document.getElementById('view-home').classList.add('hidden');
       document.getElementById('view-room').classList.add('hidden');
@@ -526,3 +528,39 @@
         let details = [];
         if (r.mode === 'cafe') {
           order.items.forEach(it => {
+            sub += (it.price || 0);
+            details.push(`${it.name} (${it.sweet}/${it.ice})`);
+          });
+        } else {
+          order.items.forEach(it => {
+            const itemSub = (it.unitPrice || 0) * (it.qty || 1);
+            sub += itemSub;
+            details.push(`${it.name} x${it.qty}`);
+          });
+        }
+        grand += sub;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${order.userName}</td>
+          <td class="p-3 text-slate-600 text-xs">${details.join('、')}</td>
+          <td class="p-3 text-right font-bold text-slate-800">RM ${sub.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('co-grand-total').textContent = `RM ${grand.toFixed(2)}`;
+
+      // 產生 DuitNOW QR Code 畫布
+      const canvas = document.getElementById('qr-canvas');
+      QRCode.toCanvas(canvas, r.duitNowId, { width: 160, margin: 2 }, function (error) {
+        if (error) console.error(error);
+      });
+    }
+
+    function copyLink() {
+      navigator.clipboard.writeText(window.location.href);
+      alert('連結已複製！發給朋友就可以一起點餐囉！');
+    }
+  </script>
+</body>
+</html>
