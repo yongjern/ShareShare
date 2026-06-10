@@ -52,10 +52,6 @@
             <input id="inp-duitnow" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="手機號碼 / 身分證 / 商戶號">
           </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">🔒 截單密碼</label>
-          <input id="inp-pin" type="password" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="請設定一組數字密碼，截單時需輸入">
-        </div>
         <button onclick="createRoom()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">建立房間</button>
       </div>
     </div>
@@ -140,4 +136,450 @@
             </div>
           </div>
           <div id="orders-list" class="space-y-3"></div>
-          <div id="empty-state" class="text-center text-slate-400 py-10">尚無訂單，
+          <div id="empty-state" class="text-center text-slate-400 py-10">尚無訂單，趕快新增吧！</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-checkout" class="max-w-3xl mx-auto px-4 py-12 hidden">
+    <div class="text-center mb-8">
+      <div class="inline-block p-3 rounded-full bg-green-100 text-green-700 mb-3">✅</div>
+      <h1 class="text-3xl font-bold text-slate-800">已結單</h1>
+      <p class="text-slate-500">以下是這次揪團的總明細</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden mb-6">
+      <div class="p-6">
+        <div class="flex justify-between items-end mb-6">
+          <div>
+            <div class="text-sm text-slate-500">團購名稱</div>
+            <div class="text-xl font-bold" id="co-name"></div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-slate-500">總金額</div>
+            <div class="text-3xl font-bold text-orange-600" id="co-grand-total"></div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 font-bold">
+              <tr>
+                <th class="p-3 rounded-tl-lg">團員</th>
+                <th class="p-3">品項明細</th>
+                <th class="p-3 text-right rounded-tr-lg">小計</th>
+              </tr>
+            </thead>
+            <tbody id="co-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 flex flex-col items-center text-center">
+      <h3 class="font-bold text-lg mb-2">💳 付款資訊</h3>
+      <p class="text-slate-500 text-sm mb-4">請使用 DuitNOW 轉帳，並自行輸入上方金額</p>
+      <div class="mb-4">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">DuitNOW ID</div>
+        <div class="text-2xl font-mono font-bold text-slate-800" id="co-duitnow"></div>
+      </div>
+      <div class="bg-slate-50 p-4 rounded-xl inline-block">
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">掃描後即可取得收款資訊</p>
+      <button onclick="location.hash=''" class="mt-6 px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">回首頁</button>
+    </div>
+  </div>
+
+  <script>
+    // === State ===
+    let currentMode = 'cafe';
+    let currentRoom = null;
+    let hasServer = false;
+    const localRoomsKey = 'split_bill_rooms';
+
+    // === Init ===
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. 優先執行路由，渲染 UI（此時預設 hasServer 為 false，先用 localStorage 模式防白屏）
+      route();
+
+      // 2. 異步在背景進行伺服器檢查，不阻擋頁面顯示
+      checkServer().then(() => {
+        // 如果發現有伺服器，且網址含有 room 參數，則重新執行 route 載入伺服器最新狀態
+        if (hasServer && location.hash.startsWith('#room=')) {
+          route();
+        }
+      });
+    });
+    window.addEventListener('hashchange', route);
+
+    // === API / Storage Abstraction ===
+    async function checkServer() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 秒超時機制，避免後端慢速導致前端卡死
+      try {
+        const r = await fetch('/api/health', { 
+          method: 'GET',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (r.ok) {
+          hasServer = true;
+        } else {
+          hasServer = false;
+        }
+      } catch(e) { 
+        hasServer = false; 
+      }
+    }
+
+    async function api(path, method='GET', body=null) {
+      if (!hasServer) return null;
+      try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        const r = await fetch(path, opts);
+        if (!r.ok) throw new Error();
+        return await r.json();
+      } catch(e) { return null; }
+    }
+
+    function saveLocal(room) {
+      const map = JSON.parse(localStorage.getItem(localRoomsKey) || '{}');
+      map[room.id] = room;
+      localStorage.setItem(localRoomsKey, JSON.stringify(map));
+    }
+
+    function loadLocal(id) {
+      const map = JSON.parse(localStorage.getItem(localRoomsKey) || '{}');
+      return map[id] || null;
+    }
+
+    // === Router ===
+    function route() {
+      const hash = location.hash || '';
+      if (hash.startsWith('#room=')) {
+        const id = hash.replace('#room=', '').split('&')[0];
+        loadRoom(id);
+      } else {
+        showHome();
+      }
+    }
+
+    function showHome() {
+      ['view-home','view-room','view-checkout'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById('view-home').classList.remove('hidden');
+      document.getElementById('create-panel').classList.add('hidden');
+    }
+
+    // === Home Actions ===
+    function selectMode(mode) {
+      currentMode = mode;
+      document.getElementById('create-panel').classList.remove('hidden');
+      document.getElementById('create-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function createRoom() {
+      const name = document.getElementById('inp-room-name').value.trim();
+      const creator = document.getElementById('inp-creator').value.trim();
+      const duitNowId = document.getElementById('inp-duitnow').value.trim();
+
+      if (!name || !creator || !duitNowId) {
+        alert('請填寫所有欄位');
+        return;
+      }
+
+      const room = {
+        id: 'r_' + Date.now(),
+        name,
+        mode: currentMode,
+        creator,
+        duitNowId,
+        isClosed: false,
+        orders: [],
+        createdAt: Date.now()
+      };
+
+      if (hasServer) {
+        const res = await api('/api/rooms', 'POST', room);
+        if (res) Object.assign(room, res);
+      }
+      saveLocal(room);
+      location.hash = `room=${room.id}`;
+    }
+
+    // === Room Load ===
+    async function loadRoom(id) {
+      let room = null;
+      if (hasServer) {
+        room = await api(`/api/rooms/${id}`);
+      }
+      if (!room) {
+        room = loadLocal(id);
+      }
+
+      if (!room) {
+        alert('房間不存在或僅存在於發起人的瀏覽器中。');
+        location.hash = '';
+        return;
+      }
+
+      currentRoom = room;
+      if (room.isClosed) {
+        renderCheckout();
+      } else {
+        renderRoom();
+      }
+    }
+
+    // === Room View Render ===
+    function renderRoom() {
+      document.getElementById('view-home').classList.add('hidden');
+      document.getElementById('view-checkout').classList.add('hidden');
+      document.getElementById('view-room').classList.remove('hidden');
+
+      const r = currentRoom;
+      document.getElementById('room-title').textContent = r.name;
+      document.getElementById('room-creator').textContent = r.creator;
+      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? '飲料外帶' : '街邊吃飯';
+
+      if (r.mode === 'cafe') {
+        document.getElementById('form-cafe').classList.remove('hidden');
+        document.getElementById('form-restaurant').classList.add('hidden');
+      } else {
+        document.getElementById('form-cafe').classList.add('hidden');
+        document.getElementById('form-restaurant').classList.remove('hidden');
+        if (document.getElementById('rest-rows').children.length === 0) addRestRow();
+      }
+
+      const btnClose = document.getElementById('btn-close');
+      if (loadLocal(r.id)) btnClose.classList.remove('hidden');
+      else btnClose.classList.add('hidden');
+
+      renderOrders();
+    }
+
+    // === Order Submission ===
+    function addRestRow() {
+      const container = document.getElementById('rest-rows');
+      const div = document.createElement('div');
+      div.className = 'grid grid-cols-12 gap-2 items-center';
+      div.innerHTML = `
+        <input data-name placeholder="菜品名稱" class="col-span-4 border rounded px-2 py-1 text-sm">
+        <input data-price type="number" step="0.01" placeholder="單價" class="col-span-3 border rounded px-2 py-1 text-sm">
+        <input data-qty type="number" value="1" min="1" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <input data-note placeholder="備註" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <button onclick="this.parentElement.remove()" class="col-span-1 text-rose-500 font-bold">🗑️</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function submitOrder() {
+      const user = document.getElementById('form-user').value.trim();
+      if (!user) { alert('請輸入暱稱'); return; }
+
+      const r = currentRoom;
+      const items = [];
+      let valid = true;
+
+      if (r.mode === 'cafe') {
+        const name = document.getElementById('cafe-name').value.trim();
+        const price = parseFloat(document.getElementById('cafe-price').value);
+        const qty = parseInt(document.getElementById('cafe-qty').value || 1);
+        const sweet = document.getElementById('cafe-sweet').value;
+        const ice = document.getElementById('cafe-ice').value;
+        const note = document.getElementById('cafe-note').value.trim();
+
+        if (!name || isNaN(price)) { alert('請填寫品項與單價'); return; }
+        for(let i=0;i<qty;i++) {
+          items.push({ name, price, sweet, ice, note });
+        }
+
+        ['cafe-name','cafe-price','cafe-note'].forEach(id => document.getElementById(id).value='');
+        document.getElementById('cafe-qty').value = 1;
+      } else {
+        const rows = document.querySelectorAll('#rest-rows > div');
+        rows.forEach(row => {
+          const [nEl, pEl, qEl, noteEl] = [row.querySelector('[data-name]'), row.querySelector('[data-price]'), row.querySelector('[data-qty]'), row.querySelector('[data-note]')];
+          const name = nEl.value.trim();
+          const price = parseFloat(pEl.value);
+          const qty = parseInt(qEl.value||1);
+          const note = noteEl.value.trim();
+          if (!name || isNaN(price)) { valid = false; return; }
+          items.push({ name, unitPrice: price, qty, note });
+        });
+        if (!valid || items.length === 0) { alert('請完整填寫菜品'); return; }
+        document.getElementById('rest-rows').innerHTML = '';
+        addRestRow();
+      }
+
+      const order = {
+        id: 'o_' + Date.now(),
+        userName: user,
+        items,
+        addedAt: Date.now()
+      };
+
+      r.orders.push(order);
+      
+      if (hasServer) {
+        api(`/api/rooms/${r.id}/orders`, 'POST', order).then(() => renderOrders());
+      } else {
+        saveLocal(r);
+        renderOrders();
+      }
+    }
+
+    function cloneOrder(orderId) {
+      const order = currentRoom.orders.find(o => o.id === orderId);
+      if (!order) return;
+      const user = document.getElementById('form-user').value.trim() || order.userName + '的朋友';
+      const newOrder = {
+        id: 'o_' + Date.now(),
+        userName: user,
+        items: JSON.parse(JSON.stringify(order.items)),
+        addedAt: Date.now()
+      };
+      currentRoom.orders.push(newOrder);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders`, 'POST', newOrder).then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
+    }
+
+    function deleteOrder(orderId) {
+      if (!confirm('確定刪除這筆訂單？')) return;
+      currentRoom.orders = currentRoom.orders.filter(o => o.id !== orderId);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders/${orderId}`, 'DELETE').then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
+    }
+
+    // === Render Orders ===
+    function renderOrders() {
+      const container = document.getElementById('orders-list');
+      const r = currentRoom;
+      container.innerHTML = '';
+
+      if (r.orders.length === 0) {
+        document.getElementById('empty-state').classList.remove('hidden');
+      } else {
+        document.getElementById('empty-state').classList.add('hidden');
+      }
+
+      let grandTotal = 0;
+
+      r.orders.slice().reverse().forEach(order => {
+        const el = document.createElement('div');
+        el.className = 'bg-white border border-slate-100 rounded-xl p-4 flex flex-col gap-2';
+        let itemText = '';
+        let orderTotal = 0;
+
+        if (r.mode === 'cafe') {
+          order.items.forEach(it => {
+            orderTotal += (it.price || 0);
+            itemText += `<div class="text-sm text-slate-700">• ${it.name} <span class="text-slate-400 text-xs">(${it.sweet}/${it.ice})</span> <span class="font-bold">RM ${it.price.toFixed(2)}</span></div>`;
+          });
+        } else {
+          order.items.forEach(it => {
+            const sub = (it.unitPrice || 0) * (it.qty || 1);
+            orderTotal += sub;
+            itemText += `<div class="text-sm text-slate-700">• ${it.name} x${it.qty} <span class="font-bold">RM ${sub.toFixed(2)}</span></div>`;
+          });
+        }
+
+        grandTotal += orderTotal;
+
+        el.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-bold text-slate-800">${order.userName}</div>
+              <div class="mt-1 space-y-0.5">${itemText}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-orange-600">RM ${orderTotal.toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+            <button onclick="cloneOrder('${order.id}')" class="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded hover:bg-orange-100">👆 跟著點這個</button>
+            <button onclick="deleteOrder('${order.id}')" class="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded hover:bg-slate-100">刪除</button>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+
+      document.getElementById('display-total').textContent = `RM ${grandTotal.toFixed(2)}`;
+    }
+
+    async function closeRoom() {
+      if (!confirm('結單後就無法再修改訂單，確定嗎？')) return;
+      currentRoom.isClosed = true;
+      if (hasServer) {
+        await api(`/api/rooms/${currentRoom.id}/close`, 'POST');
+      } else {
+        saveLocal(currentRoom);
+      }
+      renderCheckout();
+    }
+
+    function renderCheckout() {
+      document.getElementById('view-home').classList.add('hidden');
+      document.getElementById('view-room').classList.add('hidden');
+      document.getElementById('view-checkout').classList.remove('hidden');
+
+      const r = currentRoom;
+      document.getElementById('co-name').textContent = r.name;
+      document.getElementById('co-duitnow').textContent = r.duitNowId;
+
+      const tbody = document.getElementById('co-table-body');
+      tbody.innerHTML = '';
+      let grand = 0;
+
+      r.orders.forEach(order => {
+        let sub = 0;
+        let details = [];
+        if (r.mode === 'cafe') {
+          order.items.forEach(it => {
+            sub += (it.price || 0);
+            details.push(`${it.name} (${it.sweet}/${it.ice})`);
+          });
+        } else {
+          order.items.forEach(it => {
+            const itemSub = (it.unitPrice || 0) * (it.qty || 1);
+            sub += itemSub;
+            details.push(`${it.name} x${it.qty}`);
+          });
+        }
+        grand += sub;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${order.userName}</td>
+          <td class="p-3 text-slate-600 text-xs">${details.join('、')}</td>
+          <td class="p-3 text-right font-bold text-slate-800">RM ${sub.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('co-grand-total').textContent = `RM ${grand.toFixed(2)}`;
+
+      const canvas = document.getElementById('qr-canvas');
+      QRCode.toCanvas(canvas, r.duitNowId, { width: 160, margin: 2 }, function (error) {
+        if (error) console.error(error);
+      });
+    }
+
+    function copyLink() {
+      navigator.clipboard.writeText(window.location.href);
+      alert('連結已複製！發給朋友就可以一起點餐囉！');
+    }
+  </script>
+</body>
+</html>
