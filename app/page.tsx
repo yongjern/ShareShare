@@ -33,11 +33,13 @@ export default function HomePage() {
     if (!roomName.trim() || !nickname.trim() || !payment.trim()) return setMessage(t.required);
     setBusy(true); setMessage('');
     const id = `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    const room = { id, name: roomName.trim(), mode, creator: nickname.trim(), duitNowId: payment.trim(), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname: nickname.trim(), joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
+    const creatorKey = crypto.randomUUID();
+    const room = { id, name: roomName.trim(), mode, creator: nickname.trim(), creatorKey, duitNowId: payment.trim(), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname: nickname.trim(), joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
     try {
       const response = await fetch('/api/rooms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(room) });
       if (!response.ok) { const result = await response.json().catch(() => null); throw new Error(result?.error || 'API unavailable'); }
       window.localStorage.setItem(`share_nickname_${id}`, nickname.trim());
+      window.localStorage.setItem(`share_creator_${id}`, creatorKey);
       window.location.href = `/room/${id}`;
     } catch (error) { setMessage(error instanceof Error ? error.message : '目前無法建立房間，請稍後再試。'); setBusy(false); }
   }
@@ -51,7 +53,7 @@ export default function HomePage() {
       <p className="mb-4 text-xs font-bold tracking-[0.18em] text-orange-600">{t.eyebrow}</p><h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl">{t.title}</h1><p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">{t.subtitle}</p>
     </div><div className="mt-12 grid gap-4 md:grid-cols-2"><ModeCard icon={<Coffee size={22}/>} title={t.cafe} description={t.cafeDesc} tags={t.cafeTags} active={mode === 'cafe'} onClick={() => { setMode('cafe'); document.getElementById('create-room')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} action={t.create}/><ModeCard icon={<Utensils size={22}/>} title={t.restaurant} description={t.restaurantDesc} tags={t.restaurantTags} active={mode === 'restaurant'} onClick={() => { setMode('restaurant'); document.getElementById('create-room')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} action={t.create}/></div>
     </section>
-    <section className="border-y border-slate-200 bg-white"><div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-3 lg:px-8"><Feature icon={<Link2 size={19}/>} title="一個連結" text="QR Code 或連結，手機直接加入房間。"/><Feature icon={<Users size={19}/>} title="各自點餐" text="每個人的暱稱固定顯示，避免訂單混淆。"/><Feature icon={<WalletCards size={19}/>} title="清楚結算" text="支援品項、份數與成員均分。"/></div></section>
+    <section className="border-y border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"><div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-3 lg:px-8"><Feature icon={<Link2 size={19}/>} title="一個連結" text="QR Code 或連結，手機直接加入房間。"/><Feature icon={<Users size={19}/>} title="各自點餐" text="每個人的暱稱固定顯示，避免訂單混淆。"/><Feature icon={<WalletCards size={19}/>} title="清楚結算" text="支援品項、份數與成員均分。"/></div></section>
     <section id="create-room" className="mx-auto max-w-6xl px-5 py-14 lg:px-8"><div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:items-start"><div><p className="text-sm font-bold text-orange-600">{t.demo}</p><h2 className="mt-2 text-2xl font-black tracking-tight">現在就開一個房間</h2></div><div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"><div className="mb-5 flex items-center justify-between"><h2 className="font-bold">{mode === 'cafe' ? t.cafe : t.restaurant}</h2><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{mode === 'cafe' ? '01' : '02'}</span></div><div className="space-y-3"><Field label={t.roomName} value={roomName} onChange={setRoomName}/><Field label={t.nickname} value={nickname} onChange={setNickname}/><Field label={t.payment} value={payment} onChange={setPayment}/><button onClick={createRoom} disabled={busy} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-sm font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60">{busy ? t.creating : t.createRoom}<ArrowRight size={17}/></button>{message && <p className="text-sm font-semibold text-rose-600">{message}</p>}</div></div></div></section>
     <footer className="mx-auto max-w-6xl px-5 pb-8 text-xs text-slate-500 lg:px-8">ShareShare · {new Date().getFullYear()}</footer>
   </main>;

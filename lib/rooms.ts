@@ -4,7 +4,7 @@ export type Mode = 'cafe' | 'restaurant';
 export type SplitMode = 'items' | 'parts' | 'equal';
 export type Item = { name: string; price?: number; unitPrice?: number; qty?: number; sweet?: string; ice?: string; note?: string };
 export type Order = { id: string; userName: string; items: Item[]; addedAt: number };
-export type Room = { id: string; name: string; mode: Mode; creator: string; duitNowId: string; bankAccount: string; paymentQrUrl: string; splitMode: SplitMode; splitParts: number; isClosed: boolean; members: { nickname: string; joinedAt: number }[]; orders: Order[]; createdAt: number; closedAt?: number };
+export type Room = { id: string; name: string; mode: Mode; creator: string; creatorKey?: string; duitNowId: string; bankAccount: string; paymentQrUrl: string; splitMode: SplitMode; splitParts: number; isClosed: boolean; members: { nickname: string; joinedAt: number }[]; orders: Order[]; createdAt: number; closedAt?: number };
 
 const memory = globalThis as typeof globalThis & { __shareRooms?: Record<string, Room> };
 const rooms = memory.__shareRooms ?? (memory.__shareRooms = {});
