@@ -63,6 +63,7 @@ function normalizeRoom(input) {
     paymentQrUrl: String(input.paymentQrUrl || ''),
     splitMode: input.splitMode || 'items',
     splitParts: Number(input.splitParts) || 1,
+    creatorKey: input.creatorKey ? String(input.creatorKey) : undefined,
     isClosed: false,
     members: [{ nickname: String(input.creator || '主辦人').slice(0, 60), joinedAt: Date.now() }],
     orders: [],
@@ -166,6 +167,10 @@ app.post('/api/rooms/:id/close', route(async (req, res) => {
   if (room.isClosed) {
     return res.status(400).json({ error: '房間已經是結單狀態！' });
   }
+  const creator = req.headers['x-room-creator'];
+  const creatorKey = req.headers['x-room-creator-key'];
+  const authorized = room.creatorKey ? creatorKey === room.creatorKey : creator === room.creator;
+  if (!authorized) return res.status(403).json({ error: '只有建立者可以結束房間' });
 
   room.isClosed = true;
   room.closedAt = Date.now();

@@ -34,5 +34,5 @@ export async function saveRoom(room: Room) {
 }
 export function newRoom(input: Partial<Room>): Room {
   const nickname = String(input.creator || '主辦人').slice(0, 60);
-  return { id: input.id || `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, name: String(input.name || '未命名聚餐').slice(0, 120), mode: input.mode === 'restaurant' || input.mode === 'daily' ? input.mode : 'cafe', creator: nickname, duitNowId: String(input.duitNowId || ''), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname, joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
+  return { id: input.id || `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, name: String(input.name || '未命名聚餐').slice(0, 120), mode: input.mode === 'restaurant' || input.mode === 'daily' ? input.mode : 'cafe', creator: nickname, creatorKey: input.creatorKey ? String(input.creatorKey) : undefined, duitNowId: String(input.duitNowId || ''), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname, joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
 }

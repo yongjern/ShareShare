@@ -522,8 +522,20 @@
       return `split_bill_nickname_${roomId}`;
     }
 
+    function sharedNicknameKey(roomId) {
+      return `share_nickname_${roomId}`;
+    }
+
+    function creatorKeyKey(roomId) {
+      return `split_bill_creator_${roomId}`;
+    }
+
+    function sharedCreatorKeyKey(roomId) {
+      return `share_creator_${roomId}`;
+    }
+
     function currentNickname() {
-      return currentRoom ? localStorage.getItem(nicknameKey(currentRoom.id)) || '' : '';
+      return currentRoom ? localStorage.getItem(nicknameKey(currentRoom.id)) || localStorage.getItem(sharedNicknameKey(currentRoom.id)) || '' : '';
     }
 
     function roomUrl(roomId) {
@@ -624,6 +636,7 @@
 
       const room = {
         id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        creatorKey: 'k_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
         name,
         mode: currentMode,
         creator,
@@ -643,6 +656,7 @@
       }
       saveLocal(room);
       localStorage.setItem(nicknameKey(room.id), creator);
+      localStorage.setItem(creatorKeyKey(room.id), room.creatorKey || '');
       location.hash = `room=${room.id}`;
     }
 
@@ -708,7 +722,7 @@
       }
 
       const btnClose = document.getElementById('btn-close');
-      if (loadLocal(r.id)) btnClose.classList.remove('hidden');
+      if (currentNickname() === r.creator) btnClose.classList.remove('hidden');
       else btnClose.classList.add('hidden');
 
       renderOrders();
@@ -961,11 +975,12 @@
 
     async function closeRoom() {
       const creator = currentNickname();
+      const creatorKey = localStorage.getItem(creatorKeyKey(currentRoom.id)) || localStorage.getItem(sharedCreatorKeyKey(currentRoom.id)) || currentRoom.creatorKey || '';
       if (!creator || creator !== currentRoom.creator) { alert('只有建立者可以結束房間'); return; }
       if (!confirm(t('alert-confirm-close'))) return;
       currentRoom.isClosed = true;
       if (hasServer) {
-        const response = await fetch(`/api/rooms/${currentRoom.id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-room-creator': creator } });
+        const response = await fetch(`/api/rooms/${currentRoom.id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-room-creator': creator, 'x-room-creator-key': creatorKey } });
         if (!response.ok) { currentRoom.isClosed = false; alert('只有建立者可以結束房間'); return; }
       }
       saveLocal(currentRoom);
