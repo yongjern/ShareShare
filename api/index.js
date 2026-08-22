@@ -1,24 +1,35 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const app = express();
 
-// Middleware
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 app.use(cors());
 
-// 暫存在記憶體的資料庫
-const rooms = {};
+// This is a development fallback. Use Supabase in production so Vercel
+// instances share the same room state.
+const rooms = global.__shareShareRooms || (global.__shareShareRooms = {});
 
-// 24 小時自動清理機制
-const ROOM_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+function roomId() {
+  return `r_${crypto.randomBytes(5).toString('hex')}`;
+}
 
-function scheduleRoomCleanup(roomId) {
-  setTimeout(() => {
-    if (rooms[roomId]) {
-      console.log(`[AUTO-CLEANUP] Deleting room: ${roomId}`);
-      delete rooms[roomId];
-    }
-  }, ROOM_EXPIRY_MS);
+function normalizeRoom(input) {
+  return {
+    id: input.id || roomId(),
+    name: String(input.name || '未命名聚餐').slice(0, 120),
+    mode: input.mode === 'restaurant' ? 'restaurant' : 'cafe',
+    creator: String(input.creator || '主辦人').slice(0, 60),
+    duitNowId: String(input.duitNowId || ''),
+    bankAccount: String(input.bankAccount || ''),
+    paymentQrUrl: String(input.paymentQrUrl || ''),
+    splitMode: input.splitMode || 'items',
+    splitParts: Number(input.splitParts) || 1,
+    isClosed: false,
+    members: [{ nickname: String(input.creator || '主辦人').slice(0, 60), joinedAt: Date.now() }],
+    orders: [],
+    createdAt: Date.now()
+  };
 }
 
 // 1. 伺服器健康檢查
@@ -28,23 +39,9 @@ app.get('/api/health', (req, res) => {
 
 // 2. 建立新房間
 app.post('/api/rooms', (req, res) => {
-  const roomData = req.body;
-  
-  // 驗證必要欄位（已移除 PIN 密碼欄位限制）
-  if (!roomData.id) {
-    return res.status(400).json({ error: '缺少房間ID' });
-  }
-  
-  // 將房間資料存入記憶體
-  rooms[roomData.id] = {
-    ...roomData,
-    createdAt: Date.now()
-  };
-  
-  // 排程 24 小時後自動刪除
-  scheduleRoomCleanup(roomData.id);
-  
-  res.status(201).json(roomData);
+  const room = normalizeRoom(req.body || {});
+  rooms[room.id] = room;
+  res.status(201).json(room);
 });
 
 // 3. 取得房間資料
@@ -57,6 +54,30 @@ app.get('/api/rooms/:id', (req, res) => {
   }
 
   res.status(200).json(room);
+});
+
+app.post('/api/rooms/:id/members', (req, res) => {
+  const room = rooms[req.params.id];
+  const nickname = String(req.body && req.body.nickname || '').trim().slice(0, 60);
+  if (!room) return res.status(404).json({ error: '房間不存在' });
+  if (!nickname) return res.status(400).json({ error: '請輸入暱稱' });
+  if (!room.members.some(member => member.nickname === nickname)) {
+    room.members.push({ nickname, joinedAt: Date.now() });
+  }
+  res.status(201).json(room);
+});
+
+app.patch('/api/rooms/:id', (req, res) => {
+  const room = rooms[req.params.id];
+  if (!room) return res.status(404).json({ error: '房間不存在' });
+  Object.assign(room, {
+    splitMode: ['items', 'parts', 'equal'].includes(req.body.splitMode) ? req.body.splitMode : room.splitMode,
+    splitParts: Math.max(1, Number(req.body.splitParts) || room.splitParts),
+    duitNowId: String(req.body.duitNowId || room.duitNowId),
+    bankAccount: String(req.body.bankAccount || room.bankAccount),
+    paymentQrUrl: String(req.body.paymentQrUrl || room.paymentQrUrl)
+  });
+  res.json(room);
 });
 
 // 4. 新增訂單
@@ -104,18 +125,11 @@ app.post('/api/rooms/:id/close', (req, res) => {
     return res.status(400).json({ error: '房間已經是結單狀態！' });
   }
 
-  // 更新狀態為已結單
   room.isClosed = true;
   room.closedAt = Date.now();
-  
-  // 排程在 24 小時後自動刪除該房間
-  scheduleRoomCleanup(roomId);
-  
-  res.status(200).json({ message: '✅ 結單成功！此房間將在 24 小時後自動刪除。', room: { id: room.id, name: room.name, isClosed: true } });
+  res.status(200).json({ message: '結單成功', room });
 });
 
-// 啟動伺服器
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Backend Server is running on http://localhost:${PORT}`);
-});
+if (require.main === module) app.listen(PORT, () => console.log(`Backend Server is running on http://localhost:${PORT}`));
+module.exports = app;
