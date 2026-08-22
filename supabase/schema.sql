@@ -1,6 +1,19 @@
 -- ShareShare Supabase schema
 create extension if not exists pgcrypto;
 
+-- Shared API state. A single JSON document keeps room updates compatible with
+-- the serverless API while allowing every device to read the same room.
+create table if not exists public.shared_rooms (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.shared_rooms enable row level security;
+create policy "public can read shared rooms" on public.shared_rooms for select using (true);
+create policy "public can create shared rooms" on public.shared_rooms for insert with check (true);
+create policy "public can update shared rooms" on public.shared_rooms for update using (true) with check (true);
+
 do $$ begin
   create type public.split_mode as enum ('items', 'parts', 'equal');
 exception when duplicate_object then null;

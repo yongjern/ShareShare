@@ -84,7 +84,7 @@
           <div class="space-y-3">
             <div>
               <label data-i18n="label-your-nickname" class="text-xs font-bold text-slate-500 uppercase">你的暱稱</label>
-              <input id="form-user" data-i18n-placeholder="placeholder-your-nickname" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="輸入名字">
+              <div id="form-user" class="w-full rounded-lg bg-orange-50 px-3 py-2 font-bold text-orange-700">請先加入房間</div>
             </div>
 
             <div id="form-cafe" class="space-y-3">
@@ -158,13 +158,15 @@
           <div class="bg-white rounded-2xl border border-slate-200 p-5">
             <h2 class="font-bold mb-3">房間分享</h2>
             <div class="flex items-center gap-3">
-              <canvas id="room-qr" width="112" height="112"></canvas>
+              <a id="room-link" class="shrink-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" target="_blank" rel="noopener" title="開啟房間連結">
+                <canvas id="room-qr" width="112" height="112"></canvas>
+              </a>
               <div class="min-w-0 text-sm text-slate-500">
-                <p class="mb-2">掃描 QR Code 或複製連結加入房間。</p>
+                <p class="mb-2">掃描 QR Code，或點擊 QR Code 開啟房間。</p>
                 <button onclick="copyLink()" class="text-orange-600 font-bold">複製房間連結</button>
               </div>
             </div>
-            <div class="mt-4 flex gap-2">
+            <div id="join-controls" class="mt-4 flex gap-2">
               <input id="join-nickname" class="min-w-0 flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="輸入暱稱加入">
               <button onclick="joinRoom()" class="bg-slate-800 text-white rounded-lg px-3 py-2 text-sm font-bold">加入</button>
             </div>
@@ -180,7 +182,12 @@
             <input id="split-parts" type="number" min="1" value="2" class="hidden w-full border rounded-lg px-3 py-2 text-sm mt-2" placeholder="平分份數">
             <div class="mt-3 space-y-2">
               <input id="payment-bank" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="銀行帳號（選填）">
-              <input id="payment-qr" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="收款 QR 圖片 URL（選填）">
+              <label class="block cursor-pointer rounded-lg border-2 border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-500 hover:border-orange-400 hover:text-orange-700">
+                <span>上傳收款 QR 碼圖片</span>
+                <input id="payment-qr" type="file" accept="image/*" class="sr-only" onchange="handlePaymentQrFile(event)">
+              </label>
+              <img id="payment-qr-preview" class="hidden mx-auto max-h-40 rounded-lg border border-slate-200" alt="收款 QR 碼預覽">
+              <button id="payment-qr-remove" type="button" onclick="removePaymentQr()" class="hidden w-full text-xs text-rose-600">移除收款 QR 碼</button>
               <button onclick="saveSettlementSettings()" class="w-full border border-orange-300 text-orange-700 rounded-lg py-2 text-sm font-bold">儲存收款設定</button>
             </div>
           </div>
@@ -237,6 +244,7 @@
         <div class="text-2xl font-mono font-bold text-slate-800" id="co-duitnow"></div>
       </div>
       <div class="bg-slate-50 p-4 rounded-xl inline-block">
+        <img id="co-payment-qr" class="hidden max-w-[240px] max-h-[240px]" alt="收款 QR 碼">
         <canvas id="qr-canvas"></canvas>
       </div>
       <p data-i18n="desc-qr-info" class="text-xs text-slate-400 mt-2">掃描後即可取得收款資訊</p>
@@ -475,26 +483,35 @@
     let hasServer = false;
     const localRoomsKey = 'split_bill_rooms';
 
+    function nicknameKey(roomId) {
+      return `split_bill_nickname_${roomId}`;
+    }
+
+    function currentNickname() {
+      return currentRoom ? localStorage.getItem(nicknameKey(currentRoom.id)) || '' : '';
+    }
+
+    function roomUrl(roomId) {
+      const url = new URL(location.href);
+      url.hash = `room=${encodeURIComponent(roomId)}`;
+      return url.toString();
+    }
+
     // === Init ===
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       // 載入預設語系
       const savedLang = localStorage.getItem('split_bill_lang') || 'zh';
       setLanguage(savedLang);
 
+      await checkServer();
       route();
-
-      checkServer().then(() => {
-        if (hasServer && location.hash.startsWith('#room=')) {
-          route();
-        }
-      });
     });
     window.addEventListener('hashchange', route);
 
     // === API / Storage Abstraction ===
     async function checkServer() {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
         const r = await fetch('/api/health', { 
           method: 'GET',
@@ -589,6 +606,7 @@
         if (res) Object.assign(room, res);
       }
       saveLocal(room);
+      localStorage.setItem(nicknameKey(room.id), creator);
       location.hash = `room=${room.id}`;
     }
 
@@ -609,7 +627,6 @@
       }
 
       currentRoom = room;
-      localStorage.setItem('split_bill_nickname', currentRoom.creator);
       if (room.isClosed) {
         renderCheckout();
       } else {
@@ -627,13 +644,20 @@
       document.getElementById('room-title').textContent = r.name;
       document.getElementById('room-creator').textContent = r.creator;
       document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? t('badge-cafe') : t('badge-rest');
-      document.getElementById('form-user').value = localStorage.getItem('split_bill_nickname') || '';
+      const nickname = currentNickname();
+      document.getElementById('form-user').textContent = nickname ? `歡迎使用，@${nickname}` : '請先在「房間分享」加入房間';
       document.getElementById('join-nickname').value = '';
+      document.getElementById('join-controls').classList.toggle('hidden', Boolean(nickname));
       document.getElementById('split-mode').value = r.splitMode || 'items';
       document.getElementById('split-parts').value = r.splitParts || 2;
       document.getElementById('payment-bank').value = r.bankAccount || '';
-      document.getElementById('payment-qr').value = r.paymentQrUrl || '';
-      if (window.QRCode) QRCode.toCanvas(document.getElementById('room-qr'), `${location.origin}${location.pathname}#room=${r.id}`, { width: 112, margin: 1 });
+      const qrPreview = document.getElementById('payment-qr-preview');
+      qrPreview.src = r.paymentQrUrl || '';
+      qrPreview.classList.toggle('hidden', !r.paymentQrUrl);
+      document.getElementById('payment-qr-remove').classList.toggle('hidden', !r.paymentQrUrl);
+      const shareUrl = roomUrl(r.id);
+      document.getElementById('room-link').href = shareUrl;
+      if (window.QRCode) QRCode.toCanvas(document.getElementById('room-qr'), shareUrl, { width: 112, margin: 1 });
 
       if (r.mode === 'cafe') {
         document.getElementById('form-cafe').classList.remove('hidden');
@@ -668,7 +692,7 @@
     }
 
     function submitOrder() {
-      const user = document.getElementById('form-user').value.trim();
+      const user = currentNickname();
       if (!user) { alert(t('alert-input-nickname')); return; }
 
       const r = currentRoom;
@@ -726,7 +750,8 @@
     function cloneOrder(orderId) {
       const order = currentRoom.orders.find(o => o.id === orderId);
       if (!order) return;
-      const user = document.getElementById('form-user').value.trim() || order.userName + t('friend-suffix');
+      const user = currentNickname();
+      if (!user) { alert(t('alert-input-nickname')); return; }
       const newOrder = {
         id: 'o_' + Date.now(),
         userName: user,
@@ -842,7 +867,7 @@
     async function joinRoom() {
       const nickname = document.getElementById('join-nickname').value.trim();
       if (!nickname) return alert(t('alert-input-nickname'));
-      localStorage.setItem('split_bill_nickname', nickname);
+      localStorage.setItem(nicknameKey(currentRoom.id), nickname);
       currentRoom.members = currentRoom.members || [];
       if (!currentRoom.members.some(member => member.nickname === nickname)) currentRoom.members.push({ nickname, joinedAt: Date.now() });
       if (hasServer) await api(`/api/rooms/${currentRoom.id}/members`, 'POST', { nickname });
@@ -850,9 +875,37 @@
       renderRoom();
     }
 
+    function handlePaymentQrFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案');
+        event.target.value = '';
+        return;
+      }
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 900 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(image.width * scale);
+        canvas.height = Math.round(image.height * scale);
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        currentRoom.paymentQrUrl = canvas.toDataURL('image/jpeg', 0.88);
+        URL.revokeObjectURL(image.src);
+        renderRoom();
+      };
+      image.onerror = () => alert('無法讀取這張圖片，請選擇其他檔案');
+      image.src = URL.createObjectURL(file);
+    }
+
+    function removePaymentQr() {
+      currentRoom.paymentQrUrl = '';
+      document.getElementById('payment-qr').value = '';
+      renderRoom();
+    }
+
     async function saveSettlementSettings(showMessage = true) {
       currentRoom.bankAccount = document.getElementById('payment-bank').value.trim();
-      currentRoom.paymentQrUrl = document.getElementById('payment-qr').value.trim();
       currentRoom.splitMode = document.getElementById('split-mode').value;
       currentRoom.splitParts = Number(document.getElementById('split-parts').value) || 2;
       if (hasServer) await api(`/api/rooms/${currentRoom.id}`, 'PATCH', currentRoom);
@@ -881,11 +934,28 @@
       document.getElementById('co-grand-total').textContent = `RM ${currentRoom.orders.reduce((sum, order) => sum + orderTotal(order), 0).toFixed(2)}`;
       document.getElementById('co-duitnow').textContent = currentRoom.duitNowId || '未設定';
       document.getElementById('co-table-body').innerHTML = calculateSettlement().map(row => `<tr><td class="p-3 font-bold">${row.name}</td><td class="p-3">${currentRoom.splitMode === 'items' ? '依個人品項計算' : '平均分攤'}</td><td class="p-3 text-right font-bold">RM ${row.amount.toFixed(2)}</td></tr>`).join('');
-      if (window.QRCode && currentRoom.duitNowId) QRCode.toCanvas(document.getElementById('qr-canvas'), currentRoom.duitNowId, { width: 180 });
+      const paymentImage = document.getElementById('co-payment-qr');
+      const generatedQr = document.getElementById('qr-canvas');
+      paymentImage.src = currentRoom.paymentQrUrl || '';
+      paymentImage.classList.toggle('hidden', !currentRoom.paymentQrUrl);
+      generatedQr.classList.toggle('hidden', Boolean(currentRoom.paymentQrUrl));
+      if (!currentRoom.paymentQrUrl && window.QRCode && currentRoom.duitNowId) {
+        QRCode.toCanvas(generatedQr, currentRoom.duitNowId, { width: 180 });
+      }
     }
 
     async function copyLink() {
-      await navigator.clipboard.writeText(`${location.origin}${location.pathname}#room=${currentRoom.id}`);
+      const shareUrl = roomUrl(currentRoom.id);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = shareUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
       alert(t('alert-link-copied'));
     }
   </script>
