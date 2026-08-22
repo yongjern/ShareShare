@@ -1,18 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Copy, ImagePlus, Link2, LoaderCircle, Plus, QrCode, Save, Trash2, UserRound, WalletCards } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ImagePlus, Link2, LoaderCircle, Moon, Plus, QrCode, Save, Sun, Trash2, UserRound, WalletCards } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Item, Mode, Order, Room, SplitMode } from '@/lib/rooms';
 
 export default function RoomPage({ params }: { params: Promise<{ id: string }> }) {
   const [room, setRoom] = useState<Room | null>(null); const [nickname, setNickname] = useState(''); const [joinName, setJoinName] = useState(''); const [itemName, setItemName] = useState(''); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1'); const [note, setNote] = useState(''); const [bank, setBank] = useState(''); const [split, setSplit] = useState<SplitMode>('items'); const [paymentQr, setPaymentQr] = useState(''); const [loading, setLoading] = useState(true); const [notice, setNotice] = useState('');
   const [id, setId] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
+  const isCreator = Boolean(room && nickname && nickname === room.creator);
+  useEffect(() => { setDarkMode(localStorage.getItem('share_theme') === 'dark'); }, []);
+  useEffect(() => { if (!id) return; const refresh = () => fetch(`/api/rooms/${id}`).then(response => response.ok ? response.json() : null).then(data => { if (data) setRoom(data); }); const timer = window.setInterval(refresh, 3000); return () => window.clearInterval(timer); }, [id]);
   useEffect(() => { params.then(({ id: roomId }) => { setId(roomId); const saved = localStorage.getItem(`share_nickname_${roomId}`) || ''; setNickname(saved); fetch(`/api/rooms/${roomId}`).then(response => response.ok ? response.json() : null).then(data => { setRoom(data); if (data) { setBank(data.bankAccount || ''); setSplit(data.splitMode || 'items'); setPaymentQr(data.paymentQrUrl || ''); } }).finally(() => setLoading(false)); }); }, [params]);
   const total = useMemo(() => room?.orders.reduce((sum, order) => sum + order.items.reduce((line, item) => sum + (item.price ?? item.unitPrice ?? 0) * (item.qty ?? 1), 0), 0) || 0, [room]);
   async function join() { const value = joinName.trim(); if (!value || !room) return setNotice('請輸入暱稱'); await fetch(`/api/rooms/${id}/members`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname: value }) }); localStorage.setItem(`share_nickname_${id}`, value); setNickname(value); setJoinName(''); setNotice('已加入房間'); }
   async function addOrder() { if (!room || !nickname) return setNotice('請先加入房間'); if (!itemName.trim() || !price) return setNotice('請填寫品項與單價'); const items: Item[] = Array.from({ length: Math.max(1, Number(qty) || 1) }, () => ({ name: itemName.trim(), price: Number(price), sweet: room.mode === 'cafe' ? '正常' : undefined, ice: room.mode === 'cafe' ? '正常冰' : undefined, note: note.trim() })); const order: Order = { id: `o_${Date.now()}`, userName: nickname, items, addedAt: Date.now() }; const response = await fetch(`/api/rooms/${id}/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(order) }); if (response.ok) { setRoom({ ...room, orders: [...room.orders, order] }); setItemName(''); setPrice(''); setQty('1'); setNote(''); setNotice('訂單已加入'); } }
-  async function saveSettings() { if (!room) return; const response = await fetch(`/api/rooms/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bankAccount: bank, splitMode: split, paymentQrUrl: paymentQr }) }); if (response.ok) { setRoom(await response.json()); setNotice('收款設定已儲存'); } }
+  async function saveSettings() { if (!room || !isCreator) return setNotice('只有建立者可以修改收款設定'); const response = await fetch(`/api/rooms/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-room-creator': nickname }, body: JSON.stringify({ bankAccount: bank, splitMode: split, paymentQrUrl: paymentQr }) }); if (response.ok) { setRoom(await response.json()); setNotice('收款設定已儲存'); } else setNotice('只有建立者可以修改收款設定'); }
+  function followItem(item: Item) { setItemName(item.name); setPrice(String(item.price ?? item.unitPrice ?? '')); setQty(String(item.qty ?? 1)); setNote(item.note || ''); setNotice('已帶入訂單表單'); }
   function handleQr(event: React.ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setPaymentQr(String(reader.result)); reader.readAsDataURL(file); }
   async function copyLink() { await navigator.clipboard?.writeText(window.location.href); setNotice('房間連結已複製'); }
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><LoaderCircle className="mr-2 animate-spin" size={18}/>載入房間…</div>;
