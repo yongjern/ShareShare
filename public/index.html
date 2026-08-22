@@ -13,12 +13,21 @@
     @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
     .mode-card { transition: all .2s ease; }
     .mode-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    body.dark-mode { background: #050404; color: #f8f5f2; }
+    body.dark-mode .bg-white, body.dark-mode .glass { background: #050404 !important; border-color: #9F3E2B !important; }
+    body.dark-mode .bg-orange-50, body.dark-mode .bg-slate-50 { background: #050404 !important; }
+    body.dark-mode .text-slate-800, body.dark-mode .text-slate-700, body.dark-mode .text-slate-600 { color: #f8f5f2 !important; }
+    body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #d8c9c4 !important; }
+    body.dark-mode input, body.dark-mode select { background: #050404 !important; color: #f8f5f2 !important; border-color: #9F3E2B !important; }
+    body.dark-mode .bg-orange-500, body.dark-mode .bg-orange-600 { background: #9F3E2B !important; }
+    body.dark-mode .text-orange-600, body.dark-mode .text-orange-700 { color: #d9654a !important; }
   </style>
 </head>
 <body class="bg-orange-50 text-slate-800 min-h-screen font-sans">
 
   <!-- 語言切換按鈕 -->
   <div class="fixed top-4 right-4 z-50 flex gap-1 bg-white/95 border border-slate-200 p-1 rounded-lg shadow-sm">
+    <button id="theme-toggle" onclick="toggleTheme()" class="text-xs px-2 py-0.5 rounded transition" aria-label="切換深色模式">◐</button>
     <button id="lang-zh" onclick="setLanguage('zh')" class="text-xs px-2 py-0.5 rounded transition">中</button>
     <button id="lang-en" onclick="setLanguage('en')" class="text-xs px-2 py-0.5 rounded transition">EN</button>
   </div>
@@ -39,6 +48,11 @@
         <div class="text-5xl mb-4">🍜</div>
         <h2 data-i18n="mode-rest-title" class="text-xl font-bold mb-1">街邊吃飯模式</h2>
         <p data-i18n="mode-rest-desc" class="text-sm text-slate-500">適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。</p>
+      </div>
+      <div onclick="selectMode('daily')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🛒</div>
+        <h2 data-i18n="mode-daily-title" class="text-xl font-bold mb-1">生活百貨模式</h2>
+        <p data-i18n="mode-daily-desc" class="text-sm text-slate-500">適合超市、日用品與家庭採購。自由輸入商品、單價和數量。</p>
       </div>
     </div>
 
@@ -262,6 +276,8 @@
         "mode-cafe-desc": "適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。",
         "mode-rest-title": "街邊吃飯模式",
         "mode-rest-desc": "適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。",
+        "mode-daily-title": "生活百貨模式",
+        "mode-daily-desc": "適合超市、日用品與家庭採購。自由輸入商品、單價和數量。",
         "create-title": "開新團",
         "label-room-name": "團購名稱",
         "placeholder-room-name": "例如：Friday ZUS、午餐・雜飯檔",
@@ -318,6 +334,7 @@
         "alert-no-room": "房間不存在或僅存在於發起人的瀏覽器中。",
         "badge-cafe": "飲料外帶",
         "badge-rest": "街邊吃飯",
+        "badge-daily": "生活百貨",
         "rest-placeholder-name": "菜品名稱",
         "rest-placeholder-price": "單價",
         "rest-placeholder-note": "備註",
@@ -336,6 +353,8 @@
         "mode-cafe-desc": "Best for: ZUS Coffee, bubble tea, bakery.<br>Built-in sugar & ice options.",
         "mode-rest-title": "Dine-in / Street Food Mode",
         "mode-rest-desc": "Best for: Mamak, food stalls, custom menus.<br>Freely enter item names and unit prices.",
+        "mode-daily-title": "Daily Goods Mode",
+        "mode-daily-desc": "For groceries, household goods and daily shopping. Enter products, prices and quantities freely.",
         "create-title": "Create New Group",
         "label-room-name": "Group Name",
         "placeholder-room-name": "e.g., Friday ZUS, Lunch @ Mamak",
@@ -392,6 +411,7 @@
         "alert-no-room": "Room doesn't exist or only exists in the organizer's browser.",
         "badge-cafe": "Beverage",
         "badge-rest": "Dine-in",
+        "badge-daily": "Daily Goods",
         "rest-placeholder-name": "Dish Name",
         "rest-placeholder-price": "Price",
         "rest-placeholder-note": "Remarks",
@@ -483,6 +503,11 @@
     let hasServer = false;
     const localRoomsKey = 'split_bill_rooms';
 
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('split_bill_theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
+
     function nicknameKey(roomId) {
       return `split_bill_nickname_${roomId}`;
     }
@@ -499,6 +524,7 @@
 
     // === Init ===
     window.addEventListener('DOMContentLoaded', async () => {
+      if (localStorage.getItem('split_bill_theme') === 'dark') document.body.classList.add('dark-mode');
       // 載入預設語系
       const savedLang = localStorage.getItem('split_bill_lang') || 'zh';
       setLanguage(savedLang);
@@ -643,7 +669,7 @@
       const r = currentRoom;
       document.getElementById('room-title').textContent = r.name;
       document.getElementById('room-creator').textContent = r.creator;
-      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? t('badge-cafe') : t('badge-rest');
+      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? t('badge-cafe') : (r.mode === 'daily' ? t('badge-daily') : t('badge-rest'));
       const nickname = currentNickname();
       document.getElementById('form-user').textContent = nickname ? `歡迎使用，@${nickname}` : '請先在「房間分享」加入房間';
       document.getElementById('join-nickname').value = '';
@@ -920,9 +946,14 @@
     }
 
     async function closeRoom() {
+      const creator = currentNickname();
+      if (!creator || creator !== currentRoom.creator) { alert('只有建立者可以結束房間'); return; }
       if (!confirm(t('alert-confirm-close'))) return;
       currentRoom.isClosed = true;
-      if (hasServer) await api(`/api/rooms/${currentRoom.id}/close`, 'POST');
+      if (hasServer) {
+        const response = await fetch(`/api/rooms/${currentRoom.id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-room-creator': creator } });
+        if (!response.ok) { currentRoom.isClosed = false; alert('只有建立者可以結束房間'); return; }
+      }
       saveLocal(currentRoom);
       renderCheckout();
     }
