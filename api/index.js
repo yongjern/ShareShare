@@ -56,7 +56,7 @@ function normalizeRoom(input) {
   return {
     id: input.id || roomId(),
     name: String(input.name || '未命名聚餐').slice(0, 120),
-    mode: input.mode === 'restaurant' ? 'restaurant' : 'cafe',
+    mode: input.mode === 'restaurant' || input.mode === 'daily' ? input.mode : 'cafe',
     creator: String(input.creator || '主辦人').slice(0, 60),
     duitNowId: String(input.duitNowId || ''),
     bankAccount: String(input.bankAccount || ''),

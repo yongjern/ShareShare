@@ -145,9 +145,9 @@
             </div>
 
             <div id="form-restaurant" class="hidden space-y-3">
-              <div data-i18n="rest-desc" class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
+              <div id="custom-form-desc" data-i18n="rest-desc" class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
               <div id="rest-rows" class="space-y-2"></div>
-              <button data-i18n="btn-add-item" onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新增一道菜</button>
+              <button id="btn-add-custom-item" data-i18n="btn-add-item" onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新增一道菜</button>
             </div>
 
             <button data-i18n="btn-submit" onclick="submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">加入訂單</button>
@@ -311,7 +311,9 @@
         "ice-none": "去冰",
         "ice-warm": "溫熱",
         "rest-desc": "可自行輸入多道菜品",
+        "daily-desc": "可自行輸入商品、單價、數量與採購備註",
         "btn-add-item": "＋ 新增一道菜",
+        "btn-add-product": "＋ 新增一項商品",
         "btn-submit": "加入訂單",
         "title-current-orders": "📋 目前訂單",
         "label-total": "總計",
@@ -336,8 +338,11 @@
         "badge-rest": "街邊吃飯",
         "badge-daily": "生活百貨",
         "rest-placeholder-name": "菜品名稱",
+        "daily-placeholder-name": "例如：衛生紙",
         "rest-placeholder-price": "單價",
+        "daily-placeholder-price": "商品單價",
         "rest-placeholder-note": "備註",
+        "daily-placeholder-note": "例如：我要500抽的衛生紙",
         "alert-input-nickname": "請輸入暱稱",
         "alert-fill-item-price": "請填寫品項與單價",
         "alert-fill-dishes": "請完整填寫菜品",
@@ -388,7 +393,9 @@
         "ice-none": "No Ice",
         "ice-warm": "Warm",
         "rest-desc": "Enter multiple dishes below",
+        "daily-desc": "Enter products, prices, quantities and shopping notes",
         "btn-add-item": "＋ Add a Dish",
+        "btn-add-product": "＋ Add a Product",
         "btn-submit": "Submit Order",
         "title-current-orders": "📋 Current Orders",
         "label-total": "Total",
@@ -413,8 +420,11 @@
         "badge-rest": "Dine-in",
         "badge-daily": "Daily Goods",
         "rest-placeholder-name": "Dish Name",
+        "daily-placeholder-name": "e.g. Toilet paper",
         "rest-placeholder-price": "Price",
+        "daily-placeholder-price": "Item price",
         "rest-placeholder-note": "Remarks",
+        "daily-placeholder-note": "e.g. 500-sheet toilet paper",
         "alert-input-nickname": "Please enter your nickname",
         "alert-fill-item-price": "Please fill in the item name and price",
         "alert-fill-dishes": "Please complete all dish fields",
@@ -691,6 +701,9 @@
       } else {
         document.getElementById('form-cafe').classList.add('hidden');
         document.getElementById('form-restaurant').classList.remove('hidden');
+        const isDaily = r.mode === 'daily';
+        document.getElementById('custom-form-desc').textContent = t(isDaily ? 'daily-desc' : 'rest-desc');
+        document.getElementById('btn-add-custom-item').textContent = t(isDaily ? 'btn-add-product' : 'btn-add-item');
         if (document.getElementById('rest-rows').children.length === 0) addRestRow();
       }
 
@@ -706,12 +719,13 @@
     function addRestRow() {
       const container = document.getElementById('rest-rows');
       const div = document.createElement('div');
+      const daily = currentRoom && currentRoom.mode === 'daily';
       div.className = 'grid grid-cols-12 gap-2 items-center';
       div.innerHTML = `
-        <input data-name placeholder="${t('rest-placeholder-name')}" class="col-span-4 border rounded px-2 py-1 text-sm">
-        <input data-price type="number" step="0.01" placeholder="${t('rest-placeholder-price')}" class="col-span-3 border rounded px-2 py-1 text-sm">
+        <input data-name placeholder="${t(daily ? 'daily-placeholder-name' : 'rest-placeholder-name')}" class="col-span-4 border rounded px-2 py-1 text-sm">
+        <input data-price type="number" step="0.01" placeholder="${t(daily ? 'daily-placeholder-price' : 'rest-placeholder-price')}" class="col-span-3 border rounded px-2 py-1 text-sm">
         <input data-qty type="number" value="1" min="1" class="col-span-2 border rounded px-2 py-1 text-sm">
-        <input data-note placeholder="${t('rest-placeholder-note')}" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <input data-note placeholder="${t(daily ? 'daily-placeholder-note' : 'rest-placeholder-note')}" class="col-span-2 border rounded px-2 py-1 text-sm">
         <button onclick="this.parentElement.remove()" class="col-span-1 text-rose-500 font-bold">🗑️</button>
       `;
       container.appendChild(div);
