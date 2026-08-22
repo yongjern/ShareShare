@@ -8,8 +8,10 @@ export type Room = { id: string; name: string; mode: Mode; creator: string; duit
 
 const memory = globalThis as typeof globalThis & { __shareRooms?: Record<string, Room> };
 const rooms = memory.__shareRooms ?? (memory.__shareRooms = {});
-const supabase = process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!, { auth: { persistSession: false } }) : null;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } }) : null;
 
 export async function getRoom(id: string) {
   if (!supabase) return rooms[id] ?? null;

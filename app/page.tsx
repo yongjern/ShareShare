@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Coffee, Copy, Link2, QrCode, Utensils, Users, WalletCards } from 'lucide-react';
+import { ArrowRight, Check, Coffee, Link2, Moon, QrCode, Sun, Utensils, Users, WalletCards } from 'lucide-react';
 
 type Mode = 'cafe' | 'restaurant';
 type Lang = 'zh' | 'en';
@@ -17,6 +17,7 @@ const copy = {
 
 export default function HomePage() {
   const [lang, setLang] = useState<Lang>('zh');
+  const [darkMode, setDarkMode] = useState(false);
   const [mode, setMode] = useState<Mode>('cafe');
   const [roomName, setRoomName] = useState('');
   const [nickname, setNickname] = useState('');
@@ -25,8 +26,9 @@ export default function HomePage() {
   const [message, setMessage] = useState('');
   const t = copy[lang];
 
-  useEffect(() => { const saved = window.localStorage.getItem('share_lang') as Lang | null; if (saved) setLang(saved); }, []);
+  useEffect(() => { const saved = window.localStorage.getItem('share_lang') as Lang | null; if (saved) setLang(saved); setDarkMode(window.localStorage.getItem('share_theme') === 'dark'); }, []);
   function changeLang(next: Lang) { setLang(next); window.localStorage.setItem('share_lang', next); }
+  function toggleTheme() { setDarkMode(current => { const next = !current; window.localStorage.setItem('share_theme', next ? 'dark' : 'light'); return next; }); }
   async function createRoom() {
     if (!roomName.trim() || !nickname.trim() || !payment.trim()) return setMessage(t.required);
     setBusy(true); setMessage('');
@@ -34,16 +36,16 @@ export default function HomePage() {
     const room = { id, name: roomName.trim(), mode, creator: nickname.trim(), duitNowId: payment.trim(), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname: nickname.trim(), joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
     try {
       const response = await fetch('/api/rooms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(room) });
-      if (!response.ok) throw new Error('API unavailable');
+      if (!response.ok) { const result = await response.json().catch(() => null); throw new Error(result?.error || 'API unavailable'); }
       window.localStorage.setItem(`share_nickname_${id}`, nickname.trim());
       window.location.href = `/room/${id}`;
-    } catch { setMessage('目前無法建立房間，請稍後再試。'); setBusy(false); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : '目前無法建立房間，請稍後再試。'); setBusy(false); }
   }
 
-  return <main className="min-h-screen bg-slate-50 text-slate-900">
-    <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
+  return <main className={`min-h-screen ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
       <a href="/" className="flex items-center gap-2 font-black tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600 text-sm text-white">S</span><span>ShareShare</span></a>
-      <div className="flex items-center gap-3 text-xs font-semibold text-slate-500"><span>{t.language}</span><div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1"><button onClick={() => changeLang('zh')} className={`rounded-md px-3 py-1.5 ${lang === 'zh' ? 'bg-white text-slate-900 shadow-sm' : ''}`}>中</button><button onClick={() => changeLang('en')} className={`rounded-md px-3 py-1.5 ${lang === 'en' ? 'bg-white text-slate-900 shadow-sm' : ''}`}>EN</button></div></div>
+      <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-300"><button onClick={toggleTheme} className="rounded-lg border border-slate-300 p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800" aria-label="切換深色模式">{darkMode ? <Sun size={16}/> : <Moon size={16}/>}</button><span>{t.language}</span><div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800"><button onClick={() => changeLang('zh')} className={`rounded-md px-3 py-1.5 ${lang === 'zh' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : ''}`}>中</button><button onClick={() => changeLang('en')} className={`rounded-md px-3 py-1.5 ${lang === 'en' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : ''}`}>EN</button></div></div>
     </div></header>
     <section className="mx-auto max-w-6xl px-5 pb-16 pt-14 lg:px-8 lg:pt-20"><div className="max-w-3xl">
       <p className="mb-4 text-xs font-bold tracking-[0.18em] text-orange-600">{t.eyebrow}</p><h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl">{t.title}</h1><p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">{t.subtitle}</p>
