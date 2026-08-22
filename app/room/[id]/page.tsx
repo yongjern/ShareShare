@@ -9,6 +9,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [room, setRoom] = useState<Room | null>(null); const [nickname, setNickname] = useState(''); const [joinName, setJoinName] = useState(''); const [itemName, setItemName] = useState(''); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1'); const [note, setNote] = useState(''); const [bank, setBank] = useState(''); const [split, setSplit] = useState<SplitMode>('items'); const [paymentQr, setPaymentQr] = useState(''); const [loading, setLoading] = useState(true); const [notice, setNotice] = useState('');
   const [id, setId] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+  const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const [creatorKey, setCreatorKey] = useState('');
   const isCreator = Boolean(room && ((room.creatorKey && creatorKey === room.creatorKey) || (!room.creatorKey && nickname === room.creator)));
   useEffect(() => { const enabled = localStorage.getItem('share_theme') === 'dark'; setDarkMode(enabled); document.documentElement.classList.toggle('dark', enabled); return () => document.documentElement.classList.remove('dark'); }, []);
@@ -21,6 +22,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   function followItem(item: Item, owner: string) { if (!nickname) return setNotice('請先加入房間'); setItemName(item.name); setPrice(String(item.price ?? item.unitPrice ?? '')); setQty(String(item.qty ?? 1)); setNote(item.note || ''); setNotice(`已帶入 ${owner} 的品項`); document.getElementById('add-order')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
   function handleQr(event: React.ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setPaymentQr(String(reader.result)); reader.readAsDataURL(file); }
   async function copyLink() { await navigator.clipboard?.writeText(window.location.href); setNotice('房間連結已複製'); }
+  async function closeRoom() { if (!isCreator) return setNotice('只有建立者可以結束房間'); if (!window.confirm('確定要結束這個房間嗎？')) return; const response = await fetch(`/api/rooms/${id}/close`, { method: 'POST', headers: { 'x-room-creator': nickname, 'x-room-creator-key': creatorKey } }); if (response.ok) { setRoom(await response.json()); setNotice('房間已結束'); } else setNotice('無法結束房間'); }
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><LoaderCircle className="mr-2 animate-spin" size={18}/>載入房間…</div>;
   if (!room) return <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50"><p className="font-bold">找不到這個房間</p><a className="font-bold text-orange-600" href="/">回到首頁</a></div>;
   const shareUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/room/${id}`;

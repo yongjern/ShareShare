@@ -2,7 +2,7 @@
 
 * { box-sizing: border-box; }
 html { background: #f8fafc; }
-body { margin: 0; background: #f8fafc; font-family: Georgia, 'Times New Roman', serif; }
+body { margin: 0; background: #f8fafc; font-family: 'Microsoft JhengHei', 'Noto Sans TC', 'PingFang TC', sans-serif; font-weight: 700; }
 body:has(.dark) { background: #020617; }
 .dark .text-slate-900 { color: #f8fafc; }
 .dark .text-slate-700, .dark .text-slate-600 { color: #cbd5e1; }

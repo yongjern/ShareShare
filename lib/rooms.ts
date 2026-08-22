@@ -12,12 +12,19 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE
 const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } }) : null;
+const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 
 export async function getRoom(id: string) {
-  if (!supabase) return rooms[id] ?? null;
+  if (!supabase) {
+    const room = rooms[id] ?? null;
+    if (room && Date.now() - room.createdAt >= ROOM_TTL_MS) { delete rooms[id]; return null; }
+    return room;
+  }
   const { data, error } = await supabase.from('shared_rooms').select('data').eq('id', id).maybeSingle();
   if (error) throw error;
-  return (data?.data as Room | undefined) ?? null;
+  const room = (data?.data as Room | undefined) ?? null;
+  if (room && Date.now() - room.createdAt >= ROOM_TTL_MS) { await supabase.from('shared_rooms').delete().eq('id', id); return null; }
+  return room;
 }
 export async function saveRoom(room: Room) {
   if (!supabase) { rooms[room.id] = room; return room; }
