@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+html { background: #f8fafc; }
+body { margin: 0; background: #f8fafc; font-family: 'Microsoft JhengHei', 'Noto Sans TC', 'PingFang TC', sans-serif; font-weight: 700; }
+body:has(.dark) { background: #050404; }
+.dark .text-slate-900 { color: #f8fafc; }
+.dark .text-slate-700, .dark .text-slate-600 { color: #cbd5e1; }
+.dark .text-slate-500, .dark .text-slate-400 { color: #94a3b8; }
+.dark .bg-white { background: #050404; }
+.dark .bg-slate-50 { background: #050404; }
+.dark .bg-slate-100 { background: #1e293b; }
+.dark .bg-orange-50 { background: #050404; }
+.dark .text-orange-700 { color: #d9654a; }
+.dark .text-rose-600 { color: #fda4af; }
+.dark .border-slate-200, .dark .border-slate-300 { border-color: #9F3E2B; }
+.dark input, .dark select { border-color: #9F3E2B; background: #050404; color: #f8fafc; }
+button, input { font: inherit; }
+button { cursor: pointer; }

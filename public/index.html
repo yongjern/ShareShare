@@ -1,51 +1,208 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShareShare - 系統維護中 / System Maintenance</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/yongjern/ShareShare/refs/heads/main/media/ShareShare%20Project%20Logo.png?token=GHSAT0AAAAAAD7Q4GTMLALKGSW532OOLGIK2RI3ZHQ">
+  <title>ShareShare — 無痛揪團與拆帳</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+    .mode-card { transition: all .2s ease; }
+    .mode-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    body.dark-mode { background: #050404; color: #f8f5f2; }
+    body.dark-mode .bg-white, body.dark-mode .glass { background: #050404 !important; border-color: #9F3E2B !important; }
+    body.dark-mode .bg-orange-50, body.dark-mode .bg-slate-50 { background: #050404 !important; }
+    body.dark-mode .text-slate-800, body.dark-mode .text-slate-700, body.dark-mode .text-slate-600 { color: #f8f5f2 !important; }
+    body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #d8c9c4 !important; }
+    body.dark-mode input, body.dark-mode select { background: #050404 !important; color: #f8f5f2 !important; border-color: #9F3E2B !important; }
+    body.dark-mode .bg-orange-500, body.dark-mode .bg-orange-600 { background: #9F3E2B !important; }
+    body.dark-mode .text-orange-600, body.dark-mode .text-orange-700 { color: #d9654a !important; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased">
+<body class="bg-orange-50 text-slate-800 min-h-screen font-sans">
 
-    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-sm">
-        
-        <!-- Header: Icon & Badge -->
-        <div class="flex items-center justify-between mb-6">
-            <div class="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                </svg>
+  <!-- 語言切換按鈕 -->
+  <div class="fixed top-4 right-4 z-50 flex gap-1 bg-white/95 border border-slate-200 p-1 rounded-lg shadow-sm">
+    <button id="theme-toggle" onclick="toggleTheme()" class="text-xs px-2 py-0.5 rounded transition" aria-label="切換深色模式">◐</button>
+    <button id="lang-zh" onclick="setLanguage('zh')" class="text-xs px-2 py-0.5 rounded transition">中</button>
+    <button id="lang-en" onclick="setLanguage('en')" class="text-xs px-2 py-0.5 rounded transition">EN</button>
+  </div>
+
+  <div id="view-home" class="max-w-4xl mx-auto px-4 py-12 hidden">
+    <div class="text-center mb-10">
+      <h1 data-i18n="app-title" class="text-4xl font-bold text-orange-600 mb-2">ShareShare · 無痛揪團與拆帳</h1>
+      <p data-i18n="app-subtitle" class="text-slate-500">臨時想要開個團？無需登錄即可開！</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div onclick="selectMode('cafe')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🧋</div>
+        <h2 data-i18n="mode-cafe-title" class="text-xl font-bold mb-1">模板Ⅰ · 飲料外帶模式</h2>
+        <p data-i18n="mode-cafe-desc" class="text-sm text-slate-500">適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。</p>
+      </div>
+      <div onclick="selectMode('restaurant')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🍜</div>
+        <h2 data-i18n="mode-rest-title" class="text-xl font-bold mb-1">街邊吃飯模式</h2>
+        <p data-i18n="mode-rest-desc" class="text-sm text-slate-500">適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。</p>
+      </div>
+      <div onclick="selectMode('daily')" class="mode-card cursor-pointer bg-white p-6 rounded-2xl border-2 border-orange-100 hover:border-orange-400">
+        <div class="text-5xl mb-4">🛒</div>
+        <h2 data-i18n="mode-daily-title" class="text-xl font-bold mb-1">生活百貨模式</h2>
+        <p data-i18n="mode-daily-desc" class="text-sm text-slate-500">適合超市、日用品與家庭採購。自由輸入商品、單價和數量。</p>
+      </div>
+    </div>
+
+    <div id="create-panel" class="hidden fade-in bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
+      <h3 data-i18n="create-title" class="text-lg font-bold mb-4 text-orange-700">開新團</h3>
+      <div class="space-y-4">
+        <div>
+          <label data-i18n="label-room-name" class="block text-sm font-medium mb-1">團購名稱</label>
+          <input id="inp-room-name" data-i18n-placeholder="placeholder-room-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Friday ZUS、午餐・雜飯檔">
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label data-i18n="label-creator" class="block text-sm font-medium mb-1">你的暱稱</label>
+            <input id="inp-creator" data-i18n-placeholder="placeholder-creator" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="發起人名字">
+          </div>
+          <div>
+            <label data-i18n="label-duitnow" class="block text-sm font-medium mb-1">DuitNOW 收款 ID</label>
+            <input id="inp-duitnow" data-i18n-placeholder="placeholder-duitnow" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="手機號碼 / 身分證 / 商戶號">
+          </div>
+        </div>
+        <button data-i18n="btn-create" onclick="createRoom()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">建立房間</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-room" class="max-w-6xl mx-auto px-4 py-6 hidden">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+      <div>
+        <div class="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1" id="room-mode-badge">MODE</div>
+        <h1 class="text-2xl font-bold text-slate-800" id="room-title">Room</h1>
+        <p class="text-sm text-slate-500"><span data-i18n="room-creator-label">發起人：</span><span id="room-creator"></span></p>
+      </div>
+      <div class="flex gap-2">
+        <button data-i18n="btn-copy" onclick="copyLink()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-slate-50">🔗 複製連結</button>
+        <button id="btn-close" data-i18n="btn-close" onclick="closeRoom()" class="hidden px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold">🔒 結單</button>
+      </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <div class="w-full lg:w-1/3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-4">
+          <h2 data-i18n="title-add-order" class="font-bold text-lg mb-4 flex items-center gap-2">➕ 新增訂單</h2>
+          <div class="space-y-3">
+            <div>
+              <label data-i18n="label-your-nickname" class="text-xs font-bold text-slate-500 uppercase">你的暱稱</label>
+              <div id="form-user" class="w-full rounded-lg bg-orange-50 px-3 py-2 font-bold text-orange-700">請先加入房間</div>
             </div>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700">
-                <span class="w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
-                System Maintenance
-            </span>
+
+            <div id="form-cafe" class="space-y-3">
+              <div>
+                <label data-i18n="label-item-name" class="text-xs font-bold text-slate-500 uppercase">品項名稱</label>
+                <input id="cafe-name" data-i18n-placeholder="placeholder-item-name" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Mango Lassi">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label data-i18n="label-price" class="text-xs font-bold text-slate-500 uppercase">單價 (RM)</label>
+                  <input id="cafe-price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="0.00">
+                </div>
+                <div>
+                  <label data-i18n="label-qty" class="text-xs font-bold text-slate-500 uppercase">數量</label>
+                  <input id="cafe-qty" type="number" value="1" min="1" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label data-i18n="label-sweet" class="text-xs font-bold text-slate-500 uppercase">甜度</label>
+                  <select id="cafe-sweet" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option value="sweet-normal" data-i18n="sweet-normal">正常</option>
+                    <option value="sweet-less" data-i18n="sweet-less">少糖</option>
+                    <option value="sweet-half" data-i18n="sweet-half">半糖</option>
+                    <option value="sweet-micro" data-i18n="sweet-micro">微糖</option>
+                    <option value="sweet-none" data-i18n="sweet-none">無糖</option>
+                  </select>
+                </div>
+                <div>
+                  <label data-i18n="label-ice" class="text-xs font-bold text-slate-500 uppercase">冰塊</label>
+                  <select id="cafe-ice" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option value="ice-normal" data-i18n="ice-normal">正常冰</option>
+                    <option value="ice-less" data-i18n="ice-less">少冰</option>
+                    <option value="ice-micro" data-i18n="ice-micro">微冰</option>
+                    <option value="ice-none" data-i18n="ice-none">去冰</option>
+                    <option value="ice-warm" data-i18n="ice-warm">溫熱</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label data-i18n="label-note" class="text-xs font-bold text-slate-500 uppercase">備註</label>
+                <input id="cafe-note" data-i18n-placeholder="placeholder-note" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="例如：Extra Shot">
+              </div>
+            </div>
+
+            <div id="form-restaurant" class="hidden space-y-3">
+              <div id="custom-form-desc" data-i18n="rest-desc" class="text-xs text-slate-500 mb-1">可自行輸入多道菜品</div>
+              <div id="rest-rows" class="space-y-2"></div>
+              <button id="btn-add-custom-item" data-i18n="btn-add-item" onclick="addRestRow()" class="w-full py-1.5 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-orange-400 hover:text-orange-600">＋ 新增一道菜</button>
+            </div>
+
+            <button data-i18n="btn-submit" onclick="submitOrder()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg transition">加入訂單</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full lg:w-2/3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 min-h-[300px]">
+          <div class="flex justify-between items-center mb-4">
+            <h2 data-i18n="title-current-orders" class="font-bold text-lg">📋 目前訂單</h2>
+            <div class="text-right">
+              <div data-i18n="label-total" class="text-xs text-slate-500">總計</div>
+              <div class="text-xl font-bold text-orange-600" id="display-total">RM 0.00</div>
+            </div>
+          </div>
+          <div id="orders-list" class="space-y-3"></div>
+          <div id="empty-state" data-i18n="empty-state" class="text-center text-slate-400 py-10">尚無訂單，趕快新增吧！</div>
         </div>
 
-        <!-- Main Content -->
-        <div class="space-y-6">
-            <!-- Chinese Section -->
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-slate-100 mb-2">
-                    系統進行維護中
-                </h1>
-                <p class="text-sm text-slate-400 leading-relaxed">
-                    為了提供更優質與穩定的服務，我們目前正在進行系統升級。服務預計於 <strong class="text-slate-200 font-semibold">馬來西亞時間 (MYT) 早上 06:00</strong> 恢復，感謝您的耐心等待。
-                </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h2 class="font-bold mb-3">房間分享</h2>
+            <div class="flex items-center gap-3">
+              <a id="room-link" class="shrink-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" target="_blank" rel="noopener" title="開啟房間連結">
+                <canvas id="room-qr" width="112" height="112"></canvas>
+              </a>
+              <div class="min-w-0 text-sm text-slate-500">
+                <p class="mb-2">掃描 QR Code，或點擊 QR Code 開啟房間。</p>
+                <button onclick="copyLink()" class="text-orange-600 font-bold">複製房間連結</button>
+              </div>
             </div>
-
-            <div class="h-px bg-slate-800 w-full"></div>
-
-            <!-- English Section -->
-            <div>
-                <h2 class="text-base font-semibold text-slate-200 mb-2">
-                    Under Scheduled Maintenance
-                </h2>
-                <p class="text-sm text-slate-400 leading-relaxed">
-                    We are currently performing scheduled system updates. Services are expected to resume at <strong class="text-slate-200 font-semibold">06:00 AM (Malaysia Time / UTC+8)</strong>. Thank you for your patience.
-                </p>
+            <div id="join-controls" class="mt-4 flex gap-2">
+              <input id="join-nickname" class="min-w-0 flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="輸入暱稱加入">
+              <button onclick="joinRoom()" class="bg-slate-800 text-white rounded-lg px-3 py-2 text-sm font-bold">加入</button>
+            </div>
+            <div id="member-list" class="mt-3 text-xs text-slate-500"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h2 class="font-bold mb-3">分賬設定</h2>
+            <select id="split-mode" onchange="updateSplitMode()" class="w-full border rounded-lg px-3 py-2 text-sm">
+              <option value="items">按品項分賬</option>
+              <option value="parts">自訂人數平分</option>
+              <option value="equal">房間成員均分</option>
+            </select>
+            <input id="split-parts" type="number" min="1" value="2" class="hidden w-full border rounded-lg px-3 py-2 text-sm mt-2" placeholder="平分份數">
+            <div class="mt-3 space-y-2">
+              <input id="payment-bank" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="銀行帳號（選填）">
+              <label class="block cursor-pointer rounded-lg border-2 border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-500 hover:border-orange-400 hover:text-orange-700">
+                <span>上傳收款 QR 碼圖片</span>
+                <input id="payment-qr" type="file" accept="image/*" class="sr-only" onchange="handlePaymentQrFile(event)">
+              </label>
+              <img id="payment-qr-preview" class="hidden mx-auto max-h-40 rounded-lg border border-slate-200" alt="收款 QR 碼預覽">
+              <button id="payment-qr-remove" type="button" onclick="removePaymentQr()" class="hidden w-full text-xs text-rose-600">移除收款 QR 碼</button>
+              <button onclick="saveSettlementSettings()" class="w-full border border-orange-300 text-orange-700 rounded-lg py-2 text-sm font-bold">儲存收款設定</button>
             </div>
         </div>
 
@@ -55,7 +212,774 @@
             <span>Target: 06:00 AM (MYT)</span>
         </div>
 
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 flex flex-col items-center text-center">
+      <h3 data-i18n="title-payment-info" class="font-bold text-lg mb-2">💳 付款資訊</h3>
+      <p data-i18n="desc-payment-info" class="text-slate-500 text-sm mb-4">請使用 DuitNOW 轉帳，並自行輸入上方金額</p>
+      <div class="mb-4">
+        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">DuitNOW ID</div>
+        <div class="text-2xl font-mono font-bold text-slate-800" id="co-duitnow"></div>
+      </div>
+      <div class="bg-slate-50 p-4 rounded-xl inline-block">
+        <img id="co-payment-qr" class="hidden max-w-[240px] max-h-[240px]" alt="收款 QR 碼">
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <p data-i18n="desc-qr-info" class="text-xs text-slate-400 mt-2">掃描後即可取得收款資訊</p>
+      <button data-i18n="btn-home" onclick="location.hash=''" class="mt-6 px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">回首頁</button>
     </div>
+  </div>
 
+  <script>
+    // === i18n Dictionary ===
+    const i18n = {
+      zh: {
+        "app-title": "ShareShare · 無痛揪團與拆帳",
+        "app-subtitle": "臨時想要開個團？無需登錄即可開！",
+        "mode-cafe-title": "模板Ⅰ · 飲料外帶模式",
+        "mode-cafe-desc": "適合：ZUS Coffee、手搖飲、麵包甜點。<br>內建甜度、冰塊選項。",
+        "mode-rest-title": "街邊吃飯模式",
+        "mode-rest-desc": "適合：Mamak、路邊攤、自由輸入菜單。<br>可自行輸入菜品名稱與單價。",
+        "mode-daily-title": "生活百貨模式",
+        "mode-daily-desc": "適合超市、日用品與家庭採購。自由輸入商品、單價和數量。",
+        "create-title": "開新團",
+        "label-room-name": "團購名稱",
+        "placeholder-room-name": "例如：Friday ZUS、午餐・雜飯檔",
+        "label-creator": "你的暱稱",
+        "placeholder-creator": "發起人名字",
+        "label-duitnow": "DuitNOW 收款 ID",
+        "placeholder-duitnow": "手機號碼 / 身分證 / 商戶號",
+        "btn-create": "建立房間",
+        "btn-copy": "🔗 複製連結",
+        "btn-close": "🔒 結單",
+        "room-creator-label": "發起人：",
+        "title-add-order": "➕ 新增訂單",
+        "label-your-nickname": "你的暱稱",
+        "placeholder-your-nickname": "輸入名字",
+        "label-item-name": "品項名稱",
+        "placeholder-item-name": "例如：Mango Lassi",
+        "label-price": "單價 (RM)",
+        "label-qty": "數量",
+        "label-sweet": "甜度",
+        "label-ice": "冰塊",
+        "label-note": "備註",
+        "placeholder-note": "例如：Extra Shot",
+        "sweet-normal": "正常",
+        "sweet-less": "少糖",
+        "sweet-half": "半糖",
+        "sweet-micro": "微糖",
+        "sweet-none": "無糖",
+        "ice-normal": "正常冰",
+        "ice-less": "少冰",
+        "ice-micro": "微冰",
+        "ice-none": "去冰",
+        "ice-warm": "溫熱",
+        "rest-desc": "可自行輸入多道菜品",
+        "daily-desc": "可自行輸入商品、單價、數量與採購備註",
+        "btn-add-item": "＋ 新增一道菜",
+        "btn-add-product": "＋ 新增一項商品",
+        "btn-submit": "加入訂單",
+        "title-current-orders": "📋 目前訂單",
+        "label-total": "總計",
+        "empty-state": "尚無訂單，趕快新增吧！",
+        "btn-clone": "👆 跟著點這個",
+        "btn-delete": "刪除",
+        "title-checked-out": "已結單",
+        "subtitle-checked-out": "以下是這次揪團的總明細",
+        "label-room-name-summary": "團購名稱",
+        "label-grand-total": "總金額",
+        "table-member": "團員",
+        "table-details": "品項明細",
+        "table-subtotal": "小計",
+        "title-payment-info": "💳 付款資訊",
+        "desc-payment-info": "請使用 DuitNOW 轉帳，並自行輸入上方金額",
+        "desc-qr-info": "掃描後即可取得收款資訊",
+        "btn-home": "回首頁",
+        // Alerts
+        "alert-all-fields": "請填寫所有欄位",
+        "alert-no-room": "房間不存在或僅存在於發起人的瀏覽器中。",
+        "badge-cafe": "飲料外帶",
+        "badge-rest": "街邊吃飯",
+        "badge-daily": "生活百貨",
+        "rest-placeholder-name": "菜品名稱",
+        "daily-placeholder-name": "例如：衛生紙",
+        "rest-placeholder-price": "單價",
+        "daily-placeholder-price": "商品單價",
+        "rest-placeholder-note": "備註",
+        "daily-placeholder-note": "例如：我要500抽的衛生紙",
+        "alert-input-nickname": "請輸入暱稱",
+        "alert-fill-item-price": "請填寫品項與單價",
+        "alert-fill-dishes": "請完整填寫菜品",
+        "alert-confirm-delete": "確定刪除這筆訂單？",
+        "alert-confirm-close": "結單後就無法再修改訂單，確定嗎？",
+        "alert-link-copied": "連結已複製！發給朋友就可以一起點餐囉！",
+        "friend-suffix": " 的朋友"
+      },
+      en: {
+        "app-title": "ShareShare · Seamless splits",
+        "app-subtitle": "Want to start a group? No login required!",
+        "mode-cafe-title": "Template I · Beverage Mode",
+        "mode-cafe-desc": "Best for: ZUS Coffee, bubble tea, bakery.<br>Built-in sugar & ice options.",
+        "mode-rest-title": "Dine-in / Street Food Mode",
+        "mode-rest-desc": "Best for: Mamak, food stalls, custom menus.<br>Freely enter item names and unit prices.",
+        "mode-daily-title": "Daily Goods Mode",
+        "mode-daily-desc": "For groceries, household goods and daily shopping. Enter products, prices and quantities freely.",
+        "create-title": "Create New Group",
+        "label-room-name": "Group Name",
+        "placeholder-room-name": "e.g., Friday ZUS, Lunch @ Mamak",
+        "label-creator": "Your Nickname",
+        "placeholder-creator": "Organizer Name",
+        "label-duitnow": "DuitNOW Payment ID",
+        "placeholder-duitnow": "Phone No / IC / Merchant ID",
+        "btn-create": "Create Room",
+        "btn-copy": "🔗 Copy Link",
+        "btn-close": "🔒 Close Order",
+        "room-creator-label": "Organizer: ",
+        "title-add-order": "➕ Add Order",
+        "label-your-nickname": "Your Nickname",
+        "placeholder-your-nickname": "Enter nickname",
+        "label-item-name": "Item Name",
+        "placeholder-item-name": "e.g., Mango Lassi",
+        "label-price": "Price (RM)",
+        "label-qty": "Qty",
+        "label-sweet": "Sweetness",
+        "label-ice": "Ice Level",
+        "label-note": "Remarks",
+        "placeholder-note": "e.g., Extra Shot",
+        "sweet-normal": "Regular",
+        "sweet-less": "Less Sweet",
+        "sweet-half": "Half Sweet",
+        "sweet-micro": "Light Sweet",
+        "sweet-none": "No Sugar",
+        "ice-normal": "Regular Ice",
+        "ice-less": "Less Ice",
+        "ice-micro": "Light Ice",
+        "ice-none": "No Ice",
+        "ice-warm": "Warm",
+        "rest-desc": "Enter multiple dishes below",
+        "daily-desc": "Enter products, prices, quantities and shopping notes",
+        "btn-add-item": "＋ Add a Dish",
+        "btn-add-product": "＋ Add a Product",
+        "btn-submit": "Submit Order",
+        "title-current-orders": "📋 Current Orders",
+        "label-total": "Total",
+        "empty-state": "No orders yet, add one now!",
+        "btn-clone": "👆 Copy this",
+        "btn-delete": "Delete",
+        "title-checked-out": "Order Closed",
+        "subtitle-checked-out": "Here is the summary of this group order",
+        "label-room-name-summary": "Group Name",
+        "label-grand-total": "Grand Total",
+        "table-member": "Member",
+        "table-details": "Details",
+        "table-subtotal": "Subtotal",
+        "title-payment-info": "💳 Payment Info",
+        "desc-payment-info": "Please use DuitNOW to transfer the amount shown above",
+        "desc-qr-info": "Scan to get payment details",
+        "btn-home": "Back to Home",
+        // Alerts
+        "alert-all-fields": "Please fill in all fields",
+        "alert-no-room": "Room doesn't exist or only exists in the organizer's browser.",
+        "badge-cafe": "Beverage",
+        "badge-rest": "Dine-in",
+        "badge-daily": "Daily Goods",
+        "rest-placeholder-name": "Dish Name",
+        "daily-placeholder-name": "e.g. Toilet paper",
+        "rest-placeholder-price": "Price",
+        "daily-placeholder-price": "Item price",
+        "rest-placeholder-note": "Remarks",
+        "daily-placeholder-note": "e.g. 500-sheet toilet paper",
+        "alert-input-nickname": "Please enter your nickname",
+        "alert-fill-item-price": "Please fill in the item name and price",
+        "alert-fill-dishes": "Please complete all dish fields",
+        "alert-confirm-delete": "Are you sure you want to delete this order?",
+        "alert-confirm-close": "Once closed, orders cannot be modified. Are you sure?",
+        "alert-link-copied": "Link copied! Share it with friends to start ordering!",
+        "friend-suffix": "'s Friend"
+      }
+    };
+
+    let currentLang = 'zh';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('split_bill_lang', lang);
+
+      const zhBtn = document.getElementById('lang-zh');
+      const enBtn = document.getElementById('lang-en');
+      if (lang === 'zh') {
+        zhBtn.className = "text-xs px-2 py-0.5 rounded transition font-bold bg-orange-500 text-white";
+        enBtn.className = "text-xs px-2 py-0.5 rounded transition text-slate-600 hover:bg-slate-100";
+        document.documentElement.lang = "zh-TW";
+        document.title = "ShareShare — 無痛揪團與拆帳";
+      } else {
+        zhBtn.className = "text-xs px-2 py-0.5 rounded transition text-slate-600 hover:bg-slate-100";
+        enBtn.className = "text-xs px-2 py-0.5 rounded transition font-bold bg-orange-500 text-white";
+        document.documentElement.lang = "en";
+        document.title = "ShareShare — Seamless splits";
+      }
+
+      // 替換 data-i18n 文字
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) {
+          if (i18n[lang][key].includes('<br>') || i18n[lang][key].includes('＋') || i18n[lang][key].includes('➕')) {
+            el.innerHTML = i18n[lang][key];
+          } else {
+            el.textContent = i18n[lang][key];
+          }
+        }
+      });
+
+      // 替換 Placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (i18n[lang][key]) {
+          el.placeholder = i18n[lang][key];
+        }
+      });
+
+      // 重新渲染動態區域
+      if (currentRoom) {
+        if (currentRoom.isClosed) {
+          renderCheckout();
+        } else {
+          renderRoom();
+        }
+      }
+    }
+
+    function t(key) {
+      return i18n[currentLang][key] || key;
+    }
+
+    // 處理已儲存資料之語系轉換
+    function tValue(val) {
+      if (!val) return '';
+      if (i18n[currentLang][val]) return i18n[currentLang][val];
+      
+      // Legacy data fallback (e.g., database holds Chinese text, but current UI is English)
+      if (currentLang === 'en') {
+        for (const key in i18n.zh) {
+          if (i18n.zh[key] === val) return i18n.en[key];
+        }
+      } else {
+        for (const key in i18n.en) {
+          if (i18n.en[key] === val) return i18n.zh[key];
+        }
+      }
+      return val;
+    }
+
+    // === State ===
+    let currentMode = 'cafe';
+    let currentRoom = null;
+    let hasServer = false;
+    const localRoomsKey = 'split_bill_rooms';
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('split_bill_theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
+
+    function nicknameKey(roomId) {
+      return `split_bill_nickname_${roomId}`;
+    }
+
+    function sharedNicknameKey(roomId) {
+      return `share_nickname_${roomId}`;
+    }
+
+    function creatorKeyKey(roomId) {
+      return `split_bill_creator_${roomId}`;
+    }
+
+    function sharedCreatorKeyKey(roomId) {
+      return `share_creator_${roomId}`;
+    }
+
+    function currentNickname() {
+      return currentRoom ? localStorage.getItem(nicknameKey(currentRoom.id)) || localStorage.getItem(sharedNicknameKey(currentRoom.id)) || '' : '';
+    }
+
+    function roomUrl(roomId) {
+      const url = new URL(location.href);
+      url.hash = `room=${encodeURIComponent(roomId)}`;
+      return url.toString();
+    }
+
+    // === Init ===
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (localStorage.getItem('split_bill_theme') === 'dark') document.body.classList.add('dark-mode');
+      // 載入預設語系
+      const savedLang = localStorage.getItem('split_bill_lang') || 'zh';
+      setLanguage(savedLang);
+
+      await checkServer();
+      route();
+    });
+    window.addEventListener('hashchange', route);
+
+    // === API / Storage Abstraction ===
+    async function checkServer() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      try {
+        const r = await fetch('/api/health', { 
+          method: 'GET',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (r.ok) {
+          hasServer = true;
+        } else {
+          hasServer = false;
+        }
+      } catch(e) { 
+        hasServer = false; 
+      }
+    }
+
+    async function api(path, method='GET', body=null) {
+      if (!hasServer) return null;
+      try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        const r = await fetch(path, opts);
+        if (!r.ok) throw new Error();
+        return await r.json();
+      } catch(e) { return null; }
+    }
+
+    function saveLocal(room) {
+      const map = JSON.parse(localStorage.getItem(localRoomsKey) || '{}');
+      map[room.id] = room;
+      localStorage.setItem(localRoomsKey, JSON.stringify(map));
+    }
+
+    function loadLocal(id) {
+      const map = JSON.parse(localStorage.getItem(localRoomsKey) || '{}');
+      return map[id] || null;
+    }
+
+    // === Router ===
+    function route() {
+      const hash = location.hash || '';
+      if (hash.startsWith('#room=')) {
+        const id = hash.replace('#room=', '').split('&')[0];
+        loadRoom(id);
+      } else {
+        showHome();
+      }
+    }
+
+    function showHome() {
+      ['view-home','view-room','view-checkout'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById('view-home').classList.remove('hidden');
+      document.getElementById('create-panel').classList.add('hidden');
+    }
+
+    // === Home Actions ===
+    function selectMode(mode) {
+      currentMode = mode;
+      document.getElementById('create-panel').classList.remove('hidden');
+      document.getElementById('create-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function createRoom() {
+      const name = document.getElementById('inp-room-name').value.trim();
+      const creator = document.getElementById('inp-creator').value.trim();
+      const duitNowId = document.getElementById('inp-duitnow').value.trim();
+
+      if (!name || !creator || !duitNowId) {
+        alert(t('alert-all-fields'));
+        return;
+      }
+
+      const room = {
+        id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        creatorKey: 'k_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+        name,
+        mode: currentMode,
+        creator,
+        duitNowId,
+        bankAccount: '',
+        paymentQrUrl: '',
+        splitMode: 'items',
+        splitParts: 1,
+        isClosed: false,
+        orders: [],
+        createdAt: Date.now()
+      };
+
+      if (hasServer) {
+        const res = await api('/api/rooms', 'POST', room);
+        if (res) Object.assign(room, res);
+      }
+      saveLocal(room);
+      localStorage.setItem(nicknameKey(room.id), creator);
+      localStorage.setItem(creatorKeyKey(room.id), room.creatorKey || '');
+      location.hash = `room=${room.id}`;
+    }
+
+    // === Room Load ===
+    async function loadRoom(id) {
+      let room = null;
+      if (hasServer) {
+        room = await api(`/api/rooms/${id}`);
+      }
+      if (!room) {
+        room = loadLocal(id);
+      }
+
+      if (!room) {
+        alert(t('alert-no-room'));
+        location.hash = '';
+        return;
+      }
+
+      currentRoom = room;
+      if (room.isClosed) {
+        renderCheckout();
+      } else {
+        renderRoom();
+      }
+    }
+
+    // === Room View Render ===
+    function renderRoom() {
+      document.getElementById('view-home').classList.add('hidden');
+      document.getElementById('view-checkout').classList.add('hidden');
+      document.getElementById('view-room').classList.remove('hidden');
+
+      const r = currentRoom;
+      document.getElementById('room-title').textContent = r.name;
+      document.getElementById('room-creator').textContent = r.creator;
+      document.getElementById('room-mode-badge').textContent = r.mode === 'cafe' ? t('badge-cafe') : (r.mode === 'daily' ? t('badge-daily') : t('badge-rest'));
+      const nickname = currentNickname();
+      document.getElementById('form-user').textContent = nickname ? `歡迎使用，@${nickname}` : '請先在「房間分享」加入房間';
+      document.getElementById('join-nickname').value = '';
+      document.getElementById('join-controls').classList.toggle('hidden', Boolean(nickname));
+      document.getElementById('split-mode').value = r.splitMode || 'items';
+      document.getElementById('split-parts').value = r.splitParts || 2;
+      document.getElementById('payment-bank').value = r.bankAccount || '';
+      const qrPreview = document.getElementById('payment-qr-preview');
+      qrPreview.src = r.paymentQrUrl || '';
+      qrPreview.classList.toggle('hidden', !r.paymentQrUrl);
+      document.getElementById('payment-qr-remove').classList.toggle('hidden', !r.paymentQrUrl);
+      const shareUrl = roomUrl(r.id);
+      document.getElementById('room-link').href = shareUrl;
+      if (window.QRCode) QRCode.toCanvas(document.getElementById('room-qr'), shareUrl, { width: 112, margin: 1 });
+
+      if (r.mode === 'cafe') {
+        document.getElementById('form-cafe').classList.remove('hidden');
+        document.getElementById('form-restaurant').classList.add('hidden');
+      } else {
+        document.getElementById('form-cafe').classList.add('hidden');
+        document.getElementById('form-restaurant').classList.remove('hidden');
+        const isDaily = r.mode === 'daily';
+        document.getElementById('custom-form-desc').textContent = t(isDaily ? 'daily-desc' : 'rest-desc');
+        document.getElementById('btn-add-custom-item').textContent = t(isDaily ? 'btn-add-product' : 'btn-add-item');
+        if (document.getElementById('rest-rows').children.length === 0) addRestRow();
+      }
+
+      const btnClose = document.getElementById('btn-close');
+      if (currentNickname() === r.creator) btnClose.classList.remove('hidden');
+      else btnClose.classList.add('hidden');
+
+      renderOrders();
+      renderSettlement();
+    }
+
+    // === Order Submission ===
+    function addRestRow() {
+      const container = document.getElementById('rest-rows');
+      const div = document.createElement('div');
+      const daily = currentRoom && currentRoom.mode === 'daily';
+      div.className = 'grid grid-cols-12 gap-2 items-center';
+      div.innerHTML = `
+        <input data-name placeholder="${t(daily ? 'daily-placeholder-name' : 'rest-placeholder-name')}" class="col-span-4 border rounded px-2 py-1 text-sm">
+        <input data-price type="number" step="0.01" placeholder="${t(daily ? 'daily-placeholder-price' : 'rest-placeholder-price')}" class="col-span-3 border rounded px-2 py-1 text-sm">
+        <input data-qty type="number" value="1" min="1" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <input data-note placeholder="${t(daily ? 'daily-placeholder-note' : 'rest-placeholder-note')}" class="col-span-2 border rounded px-2 py-1 text-sm">
+        <button onclick="this.parentElement.remove()" class="col-span-1 text-rose-500 font-bold">🗑️</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function submitOrder() {
+      const user = currentNickname();
+      if (!user) { alert(t('alert-input-nickname')); return; }
+
+      const r = currentRoom;
+      const items = [];
+      let valid = true;
+
+      if (r.mode === 'cafe') {
+        const name = document.getElementById('cafe-name').value.trim();
+        const price = parseFloat(document.getElementById('cafe-price').value);
+        const qty = parseInt(document.getElementById('cafe-qty').value || 1);
+        const sweet = document.getElementById('cafe-sweet').value;
+        const ice = document.getElementById('cafe-ice').value;
+        const note = document.getElementById('cafe-note').value.trim();
+
+        if (!name || isNaN(price)) { alert(t('alert-fill-item-price')); return; }
+        for(let i=0;i<qty;i++) {
+          items.push({ name, price, sweet, ice, note });
+        }
+
+        ['cafe-name','cafe-price','cafe-note'].forEach(id => document.getElementById(id).value='');
+        document.getElementById('cafe-qty').value = 1;
+      } else {
+        const rows = document.querySelectorAll('#rest-rows > div');
+        rows.forEach(row => {
+          const [nEl, pEl, qEl, noteEl] = [row.querySelector('[data-name]'), row.querySelector('[data-price]'), row.querySelector('[data-qty]'), row.querySelector('[data-note]')];
+          const name = nEl.value.trim();
+          const price = parseFloat(pEl.value);
+          const qty = parseInt(qEl.value||1);
+          const note = noteEl.value.trim();
+          if (!name || isNaN(price)) { valid = false; return; }
+          items.push({ name, unitPrice: price, qty, note });
+        });
+        if (!valid || items.length === 0) { alert(t('alert-fill-dishes')); return; }
+        document.getElementById('rest-rows').innerHTML = '';
+        addRestRow();
+      }
+
+      const order = {
+        id: 'o_' + Date.now(),
+        userName: user,
+        items,
+        addedAt: Date.now()
+      };
+
+      r.orders.push(order);
+      
+      if (hasServer) {
+        api(`/api/rooms/${r.id}/orders`, 'POST', order).then(() => renderOrders());
+      } else {
+        saveLocal(r);
+        renderOrders();
+      }
+    }
+
+    function cloneOrder(orderId) {
+      const order = currentRoom.orders.find(o => o.id === orderId);
+      if (!order) return;
+      const user = currentNickname();
+      if (!user) { alert(t('alert-input-nickname')); return; }
+      const newOrder = {
+        id: 'o_' + Date.now(),
+        userName: user,
+        items: JSON.parse(JSON.stringify(order.items)),
+        addedAt: Date.now()
+      };
+      currentRoom.orders.push(newOrder);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders`, 'POST', newOrder).then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
+    }
+
+    function deleteOrder(orderId) {
+      if (!confirm(t('alert-confirm-delete'))) return;
+      currentRoom.orders = currentRoom.orders.filter(o => o.id !== orderId);
+      if (hasServer) {
+        api(`/api/rooms/${currentRoom.id}/orders/${orderId}`, 'DELETE').then(() => renderOrders());
+      } else {
+        saveLocal(currentRoom);
+        renderOrders();
+      }
+    }
+
+    // === Render Orders ===
+    function renderOrders() {
+      const container = document.getElementById('orders-list');
+      const r = currentRoom;
+      container.innerHTML = '';
+
+      if (r.orders.length === 0) {
+        document.getElementById('empty-state').classList.remove('hidden');
+      } else {
+        document.getElementById('empty-state').classList.add('hidden');
+      }
+
+      let grandTotal = 0;
+
+      r.orders.slice().reverse().forEach(order => {
+        const el = document.createElement('div');
+        el.className = 'bg-white border border-slate-100 rounded-xl p-4 flex flex-col gap-2';
+        let itemText = '';
+        let orderTotal = 0;
+
+        if (r.mode === 'cafe') {
+          order.items.forEach(it => {
+            orderTotal += (it.price || 0);
+            itemText += `<div class="text-sm text-slate-700">• ${it.name} <span class="text-slate-400 text-xs">(${tValue(it.sweet)}/${tValue(it.ice)})</span> <span class="font-bold">RM ${it.price.toFixed(2)}</span></div>`;
+          });
+        } else {
+          order.items.forEach(it => {
+            const sub = (it.unitPrice || 0) * (it.qty || 1);
+            orderTotal += sub;
+            itemText += `<div class="text-sm text-slate-700">• ${it.name} x${it.qty} <span class="font-bold">RM ${sub.toFixed(2)}</span></div>`;
+          });
+        }
+
+        grandTotal += orderTotal;
+
+        el.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-bold text-slate-800">${order.userName}</div>
+              <div class="mt-1 space-y-0.5">${itemText}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-orange-600">RM ${orderTotal.toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+            <button onclick="cloneOrder('${order.id}')" class="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded hover:bg-orange-100">${t('btn-clone')}</button>
+            <button onclick="deleteOrder('${order.id}')" class="text-xs px-3 py-1 bg-slate-50 text-slate-500 rounded hover:bg-slate-100">${t('btn-delete')}</button>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+
+      document.getElementById('display-total').textContent = `RM ${grandTotal.toFixed(2)}`;
+      renderSettlement();
+    }
+
+    function orderTotal(order) {
+      return order.items.reduce((total, item) => total + (item.price || (item.unitPrice * (item.qty || 1)) || 0), 0);
+    }
+
+    function calculateSettlement() {
+      const members = (currentRoom.members || []).map(member => member.nickname);
+      const grandTotal = currentRoom.orders.reduce((sum, order) => sum + orderTotal(order), 0);
+      if (currentRoom.splitMode === 'parts') {
+        const parts = Math.max(1, Number(currentRoom.splitParts) || 1);
+        return Array.from({ length: parts }, (_, index) => ({ name: `第 ${index + 1} 份`, amount: grandTotal / parts }));
+      }
+      if (currentRoom.splitMode === 'equal') {
+        const names = members.length ? members : [...new Set(currentRoom.orders.map(order => order.userName))];
+        return names.map(name => ({ name, amount: names.length ? grandTotal / names.length : 0 }));
+      }
+      const totals = {};
+      currentRoom.orders.forEach(order => { totals[order.userName] = (totals[order.userName] || 0) + orderTotal(order); });
+      return Object.entries(totals).map(([name, amount]) => ({ name, amount }));
+    }
+
+    function renderSettlement() {
+      const list = document.getElementById('settlement-list');
+      if (!list || !currentRoom) return;
+      const labels = { items: '按品項', parts: '自訂份數', equal: '成員均分' };
+      document.getElementById('settlement-mode').textContent = labels[currentRoom.splitMode || 'items'];
+      list.innerHTML = calculateSettlement().map(row => `<div class="flex justify-between"><span>${row.name}</span><strong>RM ${row.amount.toFixed(2)}</strong></div>`).join('') || '<span class="text-slate-400">尚無可結算資料</span>';
+      document.getElementById('settlement-payment').textContent = `收款 ID：${currentRoom.duitNowId || '未設定'}　銀行帳號：${currentRoom.bankAccount || '未設定'}`;
+    }
+
+    async function joinRoom() {
+      const nickname = document.getElementById('join-nickname').value.trim();
+      if (!nickname) return alert(t('alert-input-nickname'));
+      localStorage.setItem(nicknameKey(currentRoom.id), nickname);
+      currentRoom.members = currentRoom.members || [];
+      if (!currentRoom.members.some(member => member.nickname === nickname)) currentRoom.members.push({ nickname, joinedAt: Date.now() });
+      if (hasServer) await api(`/api/rooms/${currentRoom.id}/members`, 'POST', { nickname });
+      saveLocal(currentRoom);
+      renderRoom();
+    }
+
+    function handlePaymentQrFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案');
+        event.target.value = '';
+        return;
+      }
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 900 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(image.width * scale);
+        canvas.height = Math.round(image.height * scale);
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        currentRoom.paymentQrUrl = canvas.toDataURL('image/jpeg', 0.88);
+        URL.revokeObjectURL(image.src);
+        renderRoom();
+      };
+      image.onerror = () => alert('無法讀取這張圖片，請選擇其他檔案');
+      image.src = URL.createObjectURL(file);
+    }
+
+    function removePaymentQr() {
+      currentRoom.paymentQrUrl = '';
+      document.getElementById('payment-qr').value = '';
+      renderRoom();
+    }
+
+    async function saveSettlementSettings(showMessage = true) {
+      currentRoom.bankAccount = document.getElementById('payment-bank').value.trim();
+      currentRoom.splitMode = document.getElementById('split-mode').value;
+      currentRoom.splitParts = Number(document.getElementById('split-parts').value) || 2;
+      if (hasServer) await api(`/api/rooms/${currentRoom.id}`, 'PATCH', currentRoom);
+      saveLocal(currentRoom);
+      if (showMessage) alert('收款與分賬設定已儲存');
+      renderSettlement();
+    }
+
+    async function updateSplitMode() {
+      document.getElementById('split-parts').classList.toggle('hidden', document.getElementById('split-mode').value !== 'parts');
+      await saveSettlementSettings(false);
+    }
+
+    async function closeRoom() {
+      const creator = currentNickname();
+      const creatorKey = localStorage.getItem(creatorKeyKey(currentRoom.id)) || localStorage.getItem(sharedCreatorKeyKey(currentRoom.id)) || currentRoom.creatorKey || '';
+      if (!creator || creator !== currentRoom.creator) { alert('只有建立者可以結束房間'); return; }
+      if (!confirm(t('alert-confirm-close'))) return;
+      currentRoom.isClosed = true;
+      if (hasServer) {
+        const response = await fetch(`/api/rooms/${currentRoom.id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-room-creator': creator, 'x-room-creator-key': creatorKey } });
+        if (!response.ok) { currentRoom.isClosed = false; alert('只有建立者可以結束房間'); return; }
+      }
+      saveLocal(currentRoom);
+      renderCheckout();
+    }
+
+    function renderCheckout() {
+      ['view-home', 'view-room'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      document.getElementById('view-checkout').classList.remove('hidden');
+      document.getElementById('co-name').textContent = currentRoom.name;
+      document.getElementById('co-grand-total').textContent = `RM ${currentRoom.orders.reduce((sum, order) => sum + orderTotal(order), 0).toFixed(2)}`;
+      document.getElementById('co-duitnow').textContent = currentRoom.duitNowId || '未設定';
+      document.getElementById('co-table-body').innerHTML = calculateSettlement().map(row => `<tr><td class="p-3 font-bold">${row.name}</td><td class="p-3">${currentRoom.splitMode === 'items' ? '依個人品項計算' : '平均分攤'}</td><td class="p-3 text-right font-bold">RM ${row.amount.toFixed(2)}</td></tr>`).join('');
+      const paymentImage = document.getElementById('co-payment-qr');
+      const generatedQr = document.getElementById('qr-canvas');
+      paymentImage.src = currentRoom.paymentQrUrl || '';
+      paymentImage.classList.toggle('hidden', !currentRoom.paymentQrUrl);
+      generatedQr.classList.toggle('hidden', Boolean(currentRoom.paymentQrUrl));
+      if (!currentRoom.paymentQrUrl && window.QRCode && currentRoom.duitNowId) {
+        QRCode.toCanvas(generatedQr, currentRoom.duitNowId, { width: 180 });
+      }
+    }
+
+    async function copyLink() {
+      const shareUrl = roomUrl(currentRoom.id);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = shareUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
+      alert(t('alert-link-copied'));
+    }
+  </script>
 </body>
 </html>
