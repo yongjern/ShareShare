@@ -169,7 +169,7 @@ app.post('/api/rooms/:id/close', route(async (req, res) => {
   }
   const creator = req.headers['x-room-creator'];
   const creatorKey = req.headers['x-room-creator-key'];
-  const authorized = room.creatorKey ? creatorKey === room.creatorKey : creator === room.creator;
+  const authorized = creatorKey === room.creatorKey || creator === room.creator;
   if (!authorized) return res.status(403).json({ error: '只有建立者可以結束房間' });
 
   room.isClosed = true;
