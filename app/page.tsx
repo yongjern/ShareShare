@@ -24,6 +24,7 @@ export default function HomePage() {
   const [payment, setPayment] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [joinRoomId, setJoinRoomId] = useState('');
   const t = copy[lang];
 
   useEffect(() => { const saved = window.localStorage.getItem('share_lang') as Lang | null; if (saved) setLang(saved); setDarkMode(window.localStorage.getItem('share_theme') === 'dark'); }, []);
@@ -32,7 +33,7 @@ export default function HomePage() {
   async function createRoom() {
     if (!roomName.trim() || !nickname.trim() || !payment.trim()) return setMessage(t.required);
     setBusy(true); setMessage('');
-    const id = `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const id = String(Math.floor(10000 + Math.random() * 90000));
     const creatorKey = crypto.randomUUID();
     const room = { id, name: roomName.trim(), mode, creator: nickname.trim(), creatorKey, duitNowId: payment.trim(), bankAccount: '', paymentQrUrl: '', splitMode: 'items', splitParts: 1, isClosed: false, members: [{ nickname: nickname.trim(), joinedAt: Date.now() }], orders: [], createdAt: Date.now() };
     try {
@@ -43,11 +44,13 @@ export default function HomePage() {
       window.location.href = `/room/${id}`;
     } catch (error) { setMessage(error instanceof Error ? error.message : '目前無法建立房間，請稍後再試。'); setBusy(false); }
   }
+  function joinRoom() { const code = joinRoomId.trim(); if (!/^\d{5}$/.test(code)) return setMessage(lang === 'zh' ? '請輸入 5 位數房號' : 'Enter a five-digit room code'); window.location.href = `/room/${code}`; }
 
   return <main className={`min-h-screen ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
     <header className={`border-b ${darkMode ? 'border-[#9F3E2B] bg-[#050404]' : 'border-slate-200 bg-white'}`}><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
       <a href="/" className="flex items-center gap-2 font-black tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600 text-sm text-white">S</span><span>ShareShare</span></a>
       <div className={`flex items-center gap-3 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}><button onClick={toggleTheme} className={`rounded-lg border p-2 ${darkMode ? 'border-[#9F3E2B] text-slate-200 hover:bg-[#9F3E2B]' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`} aria-label="切換深色模式">{darkMode ? <Sun size={16}/> : <Moon size={16}/>}</button><span>{t.language}</span><div className={`flex rounded-lg border p-1 ${darkMode ? 'border-[#9F3E2B] bg-[#050404]' : 'border-slate-200 bg-slate-50'}`}><button onClick={() => changeLang('zh')} className={`rounded-md px-3 py-1.5 ${lang === 'zh' ? (darkMode ? 'bg-[#9F3E2B] text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : ''}`}>中</button><button onClick={() => changeLang('en')} className={`rounded-md px-3 py-1.5 ${lang === 'en' ? (darkMode ? 'bg-[#9F3E2B] text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : ''}`}>EN</button></div></div>
+      <form onSubmit={event => { event.preventDefault(); joinRoom(); }} className="flex items-center gap-2"><input value={joinRoomId} onChange={event => setJoinRoomId(event.target.value.replace(/\D/g, '').slice(0, 5))} inputMode="numeric" maxLength={5} placeholder={lang === 'zh' ? '5 位數房號' : '5-digit code'} aria-label={lang === 'zh' ? '加入房間' : 'Join room'} className={`w-28 rounded-lg border px-3 py-2 text-xs outline-none ${darkMode ? 'border-[#9F3E2B] bg-[#050404] text-white' : 'border-slate-300 bg-white text-slate-900'}`} /><button type="submit" className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700">{lang === 'zh' ? '加入房間' : 'Join room'}</button></form>
     </div></header>
     <section className="mx-auto max-w-6xl px-5 pb-16 pt-14 lg:px-8 lg:pt-20"><div className="max-w-3xl">
       <p className="mb-4 text-xs font-bold tracking-[0.18em] text-orange-600">{t.eyebrow}</p><h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl">{t.title}</h1><p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">{t.subtitle}</p>
