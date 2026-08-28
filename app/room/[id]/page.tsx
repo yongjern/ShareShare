@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Copy, ImagePlus, Link2, LoaderCircle, Moon, Plus, QrCode, Save, Sun, Trash2, UserRound, WalletCards } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
